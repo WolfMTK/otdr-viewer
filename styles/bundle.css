@@ -72,16 +72,9 @@
 
 body {
   display: block;
-  margin: 0px;
+  margin: 0;
   background: #f3f3f1;
   user-select: none;
-}
-
-.app_container-79bc9bc {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
 }
 
 .resize_handle-79bc9bc {
