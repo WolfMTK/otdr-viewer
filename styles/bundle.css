@@ -1,0 +1,155 @@
+.titlebar-310a54c {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f3f3f1;
+  padding: 5px 10px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+  user-select: none;
+  position: relative;
+  z-index: 10000;
+  height: 35px;
+  box-sizing: border-box;
+}
+
+.titlebar-left-310a54c {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.app-icon-310a54c {
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.menu-icon-310a54c {
+  width: 20px;
+  height: 20px;
+  display: block;
+  user-select: none;
+}
+
+.menu-button-310a54c {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.titlebar-drag-310a54c {
+  flex: 1;
+  height: 100%;
+}
+
+.titlebar-controls-310a54c {
+  display: flex;
+  gap: 10px;
+}
+
+.dot-310a54c {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dot-red-310a54c {
+  background: #ff5f57;
+}
+
+.dot-yellow-310a54c {
+  background: #febc2e;
+}
+
+.dot-green-310a54c {
+  background: #28c840;
+}
+
+
+body {
+  display: block;
+  margin: 0px;
+  background: #f3f3f1;
+  user-select: none;
+}
+
+.app_container-79bc9bc {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.resize_handle-79bc9bc {
+  position: fixed;
+  z-index: 99999;
+  background: transparent;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="n"] {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="s"] {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="w"] {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="e"] {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="nw"] {
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="ne"] {
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="sw"] {
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.resize_handle-79bc9bc[data-tauri-drag-resize-region="se"] {
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
