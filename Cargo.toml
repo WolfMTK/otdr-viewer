@@ -1,5 +1,5 @@
 [package]
-name = "tauri-app-ui"
+name = "otdr-viewer"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,6 +11,10 @@ js-sys = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde-wasm-bindgen = "0.6"
 console_error_panic_hook = "0.1.7"
+stylance = "0.8.4"
 
 [workspace]
 members = ["src-tauri"]
+
+[package.metadata.stylance]
+output_file = "./styles/bundle.css"
