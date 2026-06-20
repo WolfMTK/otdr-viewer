@@ -1,0 +1,76 @@
+body {
+  display: block;
+  margin: 0;
+  background: #f3f3f1;
+  user-select: none;
+}
+
+.resize_handle {
+  position: fixed;
+  z-index: 99999;
+  background: transparent;
+}
+
+.resize_handle[data-tauri-drag-resize-region="n"] {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="s"] {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="w"] {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="e"] {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="nw"] {
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="ne"] {
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="sw"] {
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.resize_handle[data-tauri-drag-resize-region="se"] {
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
