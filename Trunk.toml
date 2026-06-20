@@ -2,8 +2,18 @@
 target = "./index.html"
 
 [watch]
-ignore = ["./src-tauri"]
+ignore = ["./src-tauri", "./styles"]
 
 [serve]
 port = 1420
 open = false
+
+[[hooks]]
+stage = "pre_build"
+command = "stylance"
+command_arguments = ["."]
+
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = ["-c", "cp ./styles/bundle.css $TRUNK_STAGING_DIR/"]
