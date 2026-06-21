@@ -1,16 +1,32 @@
+use leptos::prelude::{
+    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute,
+    Set, StyleAttribute,
+};
 pub mod tauri;
 mod ui;
 
-use leptos::prelude::*;
+use leptos::view;
 use serde::Serialize;
 use stylance::import_style;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::Closure;
+use wasm_bindgen::{JsCast, JsValue};
 
 use crate::tauri::invoke;
 use crate::ui::component::title_bar::index::TitleBar;
 use crate::ui::page::home::Home;
 
 import_style!(style, "main.module.css");
+
+const RESIZE_HANDLES: [(&str, &str); 8] = [
+    ("n", "North"),
+    ("s", "South"),
+    ("w", "West"),
+    ("e", "East"),
+    ("nw", "NorthWest"),
+    ("ne", "NorthEast"),
+    ("sw", "SouthWest"),
+    ("se", "SouthEast"),
+];
 
 #[derive(Serialize)]
 struct ResizeArgs {
@@ -26,16 +42,39 @@ fn start_resize(direction: &'static str) {
 
 fn main() {
     console_error_panic_hook::set_once();
-    mount_to_body(|| {
+
+    let (is_maximized, set_is_maximized) = signal(false);
+    let refresh_maximized = move || {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Some(value) = invoke("is_window_maximized", JsValue::NULL).await.as_bool() {
+                set_is_maximized.set(value);
+            }
+        });
+    };
+    refresh_maximized();
+
+    let on_resize = Closure::<dyn FnMut()>::new(move || refresh_maximized());
+    if let Some(win) = web_sys::window() {
+        let _ = win.add_event_listener_with_callback("resize", on_resize.as_ref().unchecked_ref());
+    }
+    on_resize.forget();
+
+    mount_to_body(move || {
         view! {
-            <div class=style::resize_handle data-resize-dir="n" on:mousedown=move |_| start_resize("North")></div>
-            <div class=style::resize_handle data-resize-dir="s" on:mousedown=move |_| start_resize("South")></div>
-            <div class=style::resize_handle data-resize-dir="w" on:mousedown=move |_| start_resize("West")></div>
-            <div class=style::resize_handle data-resize-dir="e" on:mousedown=move |_| start_resize("East")></div>
-            <div class=style::resize_handle data-resize-dir="nw" on:mousedown=move |_| start_resize("NorthWest")></div>
-            <div class=style::resize_handle data-resize-dir="ne" on:mousedown=move |_| start_resize("NorthEast")></div>
-            <div class=style::resize_handle data-resize-dir="sw" on:mousedown=move |_| start_resize("SouthWest")></div>
-            <div class=style::resize_handle data-resize-dir="se" on:mousedown=move |_| start_resize("SouthEast")></div>
+            <div style:display=move || if is_maximized.get() { "none" } else { "contents" }>
+                {RESIZE_HANDLES
+                    .into_iter()
+                    .map(|(dir, direction)| {
+                        view! {
+                            <div
+                                class=style::resize_handle
+                                data-resize-dir=dir
+                                on:mousedown=move |_| start_resize(direction)
+                            ></div>
+                        }
+                    })
+                    .collect_view()}
+            </div>
 
             <TitleBar/>
             <Home/>
