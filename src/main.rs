@@ -5,7 +5,7 @@ use leptos::prelude::{
 pub mod tauri;
 mod ui;
 
-use leptos::view;
+use leptos::{view, web_sys};
 use serde::Serialize;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
@@ -53,7 +53,7 @@ fn main() {
     };
     refresh_maximized();
 
-    let on_resize = Closure::<dyn FnMut()>::new(move || refresh_maximized());
+    let on_resize = Closure::<dyn FnMut()>::new(refresh_maximized);
     if let Some(win) = web_sys::window() {
         let _ = win.add_event_listener_with_callback("resize", on_resize.as_ref().unchecked_ref());
     }
