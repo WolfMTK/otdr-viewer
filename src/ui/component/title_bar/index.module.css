@@ -1,70 +1,71 @@
 .titlebar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #f3f3f1;
-  padding: 5px 10px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
-  user-select: none;
-  position: relative;
-  z-index: 10000;
-  height: 35px;
-  box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f3f3f1;
+    padding: 5px 10px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+    user-select: none;
+    position: relative;
+    z-index: 10000;
+    height: 35px;
+    box-sizing: border-box;
 }
 
 .titlebar-left {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .app-icon {
-  width: 25px;
-  height: 25px;
-  border-radius: 6px;
-  user-select: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+    user-select: none;
 }
 
 .menu-icon {
-  width: 20px;
-  height: 20px;
-  display: block;
-  user-select: none;
+    width: 20px;
+    height: 20px;
+    display: block;
+    user-select: none;
 }
 
 .menu-button {
-  background: transparent;
-  border: none;
-  cursor: pointer;
+    background: transparent;
+    border: none;
+    cursor: pointer;
 }
 
 .titlebar-drag {
-  flex: 1;
-  height: 100%;
+    flex: 1;
+    height: 100%;
 }
 
 .titlebar-controls {
-  display: flex;
-  gap: 10px;
+    display: flex;
+    gap: 10px;
+    user-select: none;
 }
 
 .dot {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  padding: 0;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    padding: 0;
 }
 
 .dot-red {
-  background: #ff5f57;
+    background: #ff5f57;
 }
 
 .dot-yellow {
-  background: #febc2e;
+    background: #febc2e;
 }
 
 .dot-green {
-  background: #28c840;
+    background: #28c840;
 }
