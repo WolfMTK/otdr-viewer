@@ -1,20 +1,16 @@
+pub mod tauri;
 mod ui;
 
-use crate::ui::component::title_bar::index::TitleBar;
-use crate::ui::page::home::Home;
 use leptos::prelude::*;
 use serde::Serialize;
 use stylance::import_style;
-use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-import_style!(style, "main.module.css");
+use crate::tauri::invoke;
+use crate::ui::component::title_bar::index::TitleBar;
+use crate::ui::page::home::Home;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "core"], js_name = invoke)]
-    async fn invoke(cmd: &str, args: JsValue) -> JsValue;
-}
+import_style!(style, "main.module.css");
 
 #[derive(Serialize)]
 struct ResizeArgs {
