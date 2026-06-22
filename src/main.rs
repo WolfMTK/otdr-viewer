@@ -1,6 +1,6 @@
 use leptos::prelude::{
-    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute,
-    Set, StyleAttribute,
+    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute, Set,
+    StyleAttribute,
 };
 pub mod tauri;
 mod ui;

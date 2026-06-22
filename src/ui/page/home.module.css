@@ -1,0 +1,10 @@
+.layout {
+    display: flex;
+    height: calc(100vh - 40px);
+    background: #f3f3f1;
+    overflow: hidden;
+}
+
+.content {
+    flex: 1;
+}
