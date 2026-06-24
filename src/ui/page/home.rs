@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use stylance::import_style;
 
+use crate::ui::component::recent_files::index::RecentFiles;
 use crate::ui::component::sidebar::index::Sidebar;
 
 import_style!(style, "home.module.css");
@@ -10,6 +11,7 @@ pub fn Home() -> impl IntoView {
     view! {
         <div class=style::layout>
             <Sidebar/>
+            <RecentFiles/>
             <main class=style::content></main>
         </div>
     }
