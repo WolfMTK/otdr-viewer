@@ -42,10 +42,10 @@ pub fn TitleBar() -> impl IntoView {
 
                 <Show when=move || menu_open.get()>
                     <nav class=style::menu_bar>
-                        <button class=style::menu_item>"File"</button>
-                        <button class=style::menu_item>"Edit"</button>
-                        <button class=style::menu_item>"View"</button>
-                        <button class=style::menu_item>"Help"</button>
+                        <button class=style::menu_item>"Файл"</button>
+                        <button class=style::menu_item>"Редактирование"</button>
+                        <button class=style::menu_item>"Вид"</button>
+                        <button class=style::menu_item>"Справка"</button>
                     </nav>
                 </Show>
             </div>
