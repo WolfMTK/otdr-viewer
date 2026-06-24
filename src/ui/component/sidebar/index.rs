@@ -3,6 +3,7 @@ use stylance::import_style;
 
 import_style!(style, "index.module.css");
 
+#[component]
 pub fn Sidebar() -> impl IntoView {
     let (active, set_active) = signal(0usize);
 
