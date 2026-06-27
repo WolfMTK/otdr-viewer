@@ -55,7 +55,12 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
 
         let on_move = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |e: web_sys::MouseEvent| {
             if dragging.get_untracked() {
-                let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, MAX_WIDTH);
+                let win_w = web_sys::window()
+                    .and_then(|w| w.inner_width().ok())
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(MAX_WIDTH + SIDEBAR_WIDTH);
+                let max = (win_w * 0.45).min(MAX_WIDTH);
+                let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, max);
                 width.set(w);
             }
         });
