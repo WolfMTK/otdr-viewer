@@ -8,10 +8,12 @@ import_style!(style, "home.module.css");
 
 #[component]
 pub fn Home() -> impl IntoView {
+    let panel_open = RwSignal::new(true);
+
     view! {
         <div class=style::layout>
-            <Sidebar/>
-            <RecentFiles/>
+            <Sidebar panel_open=panel_open/>
+            <RecentFiles panel_open=panel_open/>
             <main class=style::content></main>
         </div>
     }

@@ -4,7 +4,7 @@ use stylance::import_style;
 import_style!(style, "index.module.css");
 
 #[component]
-pub fn Sidebar() -> impl IntoView {
+pub fn Sidebar(panel_open: RwSignal<bool>) -> impl IntoView {
     let (active, set_active) = signal(0usize);
 
     let btn_class = move |i: usize| {
@@ -31,8 +31,13 @@ pub fn Sidebar() -> impl IntoView {
 
             <div class=style::spacer></div>
 
-            <button class=style::icon_button title="Свернуть">
-                <img src="public/collapse.svg" alt="collapse" />
+            <button class=style::icon_button
+                    title="Свернуть"
+                    on:click=move |_| panel_open.update(|v| *v = !*v)>
+                <img src="public/collapse.svg"
+                     alt="collapse"
+                     draggable="false"
+                     class=move || if panel_open.get() { String::new() } else { style::flipped.to_string() } />
             </button>
         </nav>
     }

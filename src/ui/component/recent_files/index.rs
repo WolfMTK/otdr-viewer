@@ -1,5 +1,8 @@
 use leptos::prelude::*;
 use stylance::import_style;
+use wasm_bindgen::prelude::Closure;
+use wasm_bindgen::JsCast;
+use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
 
 import_style!(style, "index.module.css");
 
@@ -42,8 +45,31 @@ fn files() -> Vec<RecentFile> {
 }
 
 #[component]
-pub fn RecentFiles() -> impl IntoView {
+pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
     let (selected, set_selected) = signal(1usize);
+    let width = RwSignal::new(MIN_WIDTH);
+    let dragging = RwSignal::new(false);
+
+    Effect::new(move |_| {
+        let Some(win) = web_sys::window() else { return };
+
+        let on_move = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |e: web_sys::MouseEvent| {
+            if dragging.get_untracked() {
+                let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, MAX_WIDTH);
+                width.set(w);
+            }
+        });
+        let _ = win.add_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
+        on_move.forget();
+
+        let on_up = Closure::<dyn FnMut()>::new(move || {
+            if dragging.get_untracked() {
+                dragging.set(false);
+            }
+        });
+        let _ = win.add_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
+        on_up.forget();
+    });
 
     let item_class = move |idx: usize| {
         if selected.get() == idx {
@@ -53,44 +79,60 @@ pub fn RecentFiles() -> impl IntoView {
         }
     };
 
+    let panel_class = move || {
+        if dragging.get() {
+            stylance::classes!(style::panel, style::panel_dragging)
+        } else {
+            style::panel.to_string()
+        }
+    };
+
     view! {
-        <aside class=style::panel>
-            <div class=style::header>"Последние файлы"</div>
+        <Show when=move || panel_open.get()>
+            <aside class=panel_class style:width=move || format!("{}px", width.get())>
+                <div class=style::header>"Последние файлы"</div>
 
-            <div class=style::search>
-                <img src="public/search.svg" alt="search" draggable="false" />
-                <input type="text" placeholder="Поиск по недавним..." />
-            </div>
+                <div class=style::search>
+                    <img src="public/search.svg" alt="search" draggable="false" />
+                    <input type="text" placeholder="Поиск по недавним..." />
+                </div>
 
-            <div class=style::list>
-                {files()
-                    .into_iter()
-                    .enumerate()
-                    .map(|(idx, f)| {
-                        view! {
-                            <div class=move || item_class(idx)
-                                 on:click=move |_| set_selected.set(idx)>
-                                <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
-                                <div class=style::file_info>
-                                    <div class=style::file_name>{f.name}</div>
-                                    <div class=style::file_path>{f.path}</div>
+                <div class=style::list>
+                    {files()
+                        .into_iter()
+                        .enumerate()
+                        .map(|(idx, f)| {
+                            view! {
+                                <div class=move || item_class(idx)
+                                     on:click=move |_| set_selected.set(idx)>
+                                    <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
+                                    <div class=style::file_info>
+                                        <div class=style::file_name>{f.name}</div>
+                                        <div class=style::file_path>{f.path}</div>
+                                    </div>
+                                    <div class=style::file_meta>
+                                        <div class=style::file_date>{f.date}</div>
+                                        <div class=style::file_length>{f.length}</div>
+                                    </div>
                                 </div>
-                                <div class=style::file_meta>
-                                    <div class=style::file_date>{f.date}</div>
-                                    <div class=style::file_length>{f.length}</div>
-                                </div>
-                            </div>
-                        }
-                    })
-                    .collect_view()}
-            </div>
+                            }
+                        })
+                        .collect_view()}
+                </div>
 
-            <div class=style::footer>
-                <button class=style::clear_btn>
-                    <img src="public/trash.svg" alt="trash" draggable="false" />
-                    "Очистить список"
-                </button>
-            </div>
-        </aside>
+                <div class=style::footer>
+                    <button class=style::clear_btn>
+                        <img src="public/trash.svg" alt="trash" draggable="false" />
+                        "Очистить список"
+                    </button>
+                </div>
+
+                <div class=style::resize_handle
+                     on:mousedown=move |e| {
+                         e.prevent_default();
+                         dragging.set(true);
+                     }></div>
+            </aside>
+        </Show>
     }
 }
