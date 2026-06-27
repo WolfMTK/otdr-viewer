@@ -33,7 +33,12 @@
 
 .active,
 .active:hover {
+    background: #e9f0fe;
     color: #3b6ef5;
+}
+
+.active img {
+    filter: invert(34%) sepia(94%) saturate(1352%) hue-rotate(208deg) brightness(97%) contrast(96%);
 }
 
 .icon_button svg, img {
