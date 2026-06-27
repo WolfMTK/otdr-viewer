@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
+
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
 
 import_style!(style, "index.module.css");

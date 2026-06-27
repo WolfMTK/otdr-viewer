@@ -1,5 +1,5 @@
 use leptos::prelude::{
-    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute, Set,
+    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute, RwSignal, Set,
     StyleAttribute,
 };
 pub mod tauri;
@@ -12,6 +12,9 @@ use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 
 use crate::tauri::invoke;
+use crate::ui::component::recent_files::index::RecentFiles;
+use crate::ui::component::sidebar::index::Sidebar;
+use crate::ui::component::status_bar::index::StatusBar;
 use crate::ui::component::title_bar::index::TitleBar;
 use crate::ui::page::home::Home;
 
@@ -59,6 +62,8 @@ fn main() {
     }
     on_resize.forget();
 
+    let panel_open = RwSignal::new(true);
+
     mount_to_body(move || {
         view! {
             <div style:display=move || if is_maximized.get() { "none" } else { "contents" }>
@@ -77,7 +82,17 @@ fn main() {
             </div>
 
             <TitleBar/>
-            <Home/>
+
+            <div class=style::screen>
+                <div class=style::layout>
+                    <Sidebar panel_open=panel_open/>
+                    <RecentFiles panel_open=panel_open/>
+                    <main class=style::content>
+                        <Home/>
+                    </main>
+                </div>
+                <StatusBar/>
+            </div>
         }
     })
 }

@@ -1,2 +1,2 @@
-pub mod index;
 mod constants;
+pub mod index;
