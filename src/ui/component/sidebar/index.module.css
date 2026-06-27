@@ -44,3 +44,7 @@
 .spacer {
     flex: 1;
 }
+
+.flipped {
+    transform: rotate(180deg);
+}
