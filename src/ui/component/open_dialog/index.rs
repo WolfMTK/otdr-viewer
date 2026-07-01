@@ -1,0 +1,342 @@
+use leptos::prelude::*;
+use serde::{Deserialize, Serialize};
+use stylance::import_style;
+use wasm_bindgen::JsValue;
+
+use crate::tauri::invoke;
+
+import_style!(style, "index.module.css");
+
+#[derive(Clone, Deserialize)]
+struct FsEntry {
+    name: String,
+    path: String,
+    is_dir: bool,
+    size_label: Option<String>,
+    modified_label: Option<String>,
+}
+
+#[derive(Clone, Deserialize, Default)]
+struct DirListing {
+    current_path: String,
+    parent_path: Option<String>,
+    entries: Vec<FsEntry>,
+    error: Option<String>,
+}
+
+#[derive(Clone, Deserialize)]
+struct QuickLocation {
+    name: String,
+    path: String,
+}
+
+#[derive(Serialize)]
+struct ListDirectoryArgs {
+    path: Option<String>,
+}
+
+async fn fetch_quick_locations() -> Vec<QuickLocation> {
+    let result = invoke("list_quick_locations", JsValue::NULL).await;
+    serde_wasm_bindgen::from_value(result).unwrap_or_default()
+}
+
+async fn fetch_directory(path: Option<String>) -> DirListing {
+    let args = serde_wasm_bindgen::to_value(&ListDirectoryArgs { path }).unwrap_or(JsValue::NULL);
+    let result = invoke("list_directory", args).await;
+    serde_wasm_bindgen::from_value(result).unwrap_or_default()
+}
+
+fn has_sor_extension(name: &str) -> bool {
+    name.to_lowercase().ends_with(".sor")
+}
+
+fn join_path(dir: &str, name: &str) -> String {
+    if dir.ends_with('/') || dir.ends_with('\\') {
+        format!("{dir}{name}")
+    } else if dir.contains('\\') {
+        format!("{dir}\\{name}")
+    } else {
+        format!("{dir}/{name}")
+    }
+}
+
+fn resolve_open_path(current_path: &str, filename: &str, selected_path: Option<String>) -> String {
+    match selected_path {
+        Some(p) if p.rsplit(['/', '\\']).next() == Some(filename) => p,
+        _ => join_path(current_path, filename),
+    }
+}
+
+fn render_location_button(
+    idx: usize,
+    name: String,
+    active_location: RwSignal<usize>,
+    on_select: impl Fn(usize) + Copy + 'static,
+) -> impl IntoView {
+    view! {
+        <button
+            class=move || {
+                if active_location.get() == idx {
+                    stylance::classes!(style::location_item, style::location_item_active)
+                } else {
+                    style::location_item.to_string()
+                }
+            }
+            on:click=move |_| on_select(idx)
+        >
+            <img src="public/folder.svg" class=style::location_icon alt="" draggable="false" />
+            <span>{name}</span>
+        </button>
+    }
+}
+
+fn render_entry_row(
+    entry: FsEntry,
+    selected_path: RwSignal<Option<String>>,
+    on_click: impl Fn(FsEntry) + Copy + 'static,
+    on_dblclick: impl Fn(FsEntry) + Copy + 'static,
+) -> impl IntoView {
+    let entry_path = entry.path.clone();
+    let entry_for_click = entry.clone();
+    let entry_for_dblclick = entry.clone();
+    let icon = if entry.is_dir {
+        "public/folder.svg"
+    } else {
+        "public/file.svg"
+    };
+
+    view! {
+        <div
+            class=move || {
+                if selected_path.get().as_deref() == Some(entry_path.as_str()) {
+                    stylance::classes!(style::file_row, style::file_row_active)
+                } else {
+                    style::file_row.to_string()
+                }
+            }
+            on:click=move |_| on_click(entry_for_click.clone())
+            on:dblclick=move |_| on_dblclick(entry_for_dblclick.clone())
+        >
+            <img src=icon class=style::row_icon alt="" draggable="false" />
+            <span class=style::row_name>{entry.name.clone()}</span>
+            <span class=style::row_size>{entry.size_label.clone().unwrap_or_default()}</span>
+            <span class=style::row_date>{entry.modified_label.clone().unwrap_or_default()}</span>
+        </div>
+    }
+}
+
+#[component]
+pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
+    let quick_locations = RwSignal::new(Vec::<QuickLocation>::new());
+    let active_location = RwSignal::new(0usize);
+
+    let current_path = RwSignal::new(String::new());
+    let parent_path = RwSignal::new(None::<String>);
+    let entries = RwSignal::new(Vec::<FsEntry>::new());
+    let dir_error = RwSignal::new(None::<String>);
+    let loading = RwSignal::new(false);
+    let loaded_once = RwSignal::new(false);
+
+    let selected_path = RwSignal::new(None::<String>);
+    let query = RwSignal::new(String::new());
+    let filename = RwSignal::new(String::new());
+
+    let reset_selection = move || {
+        query.set(String::new());
+        selected_path.set(None);
+        filename.set(String::new());
+    };
+
+    let load_dir = move |path: Option<String>| {
+        loading.set(true);
+        wasm_bindgen_futures::spawn_local(async move {
+            let listing = fetch_directory(path).await;
+            current_path.set(listing.current_path);
+            parent_path.set(listing.parent_path);
+            entries.set(listing.entries);
+            dir_error.set(listing.error);
+            loading.set(false);
+        });
+    };
+
+    Effect::new(move |_| {
+        if open.get() && !loaded_once.get_untracked() {
+            loaded_once.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                let locations = fetch_quick_locations().await;
+                let first_path = locations.first().map(|l| l.path.clone());
+                quick_locations.set(locations);
+                load_dir(first_path);
+            });
+        }
+    });
+
+    let close = move || open.set(false);
+
+    let select_location = move |idx: usize| {
+        active_location.set(idx);
+        reset_selection();
+        let path = quick_locations.get_untracked().get(idx).map(|l| l.path.clone());
+        load_dir(path);
+    };
+
+    let navigate_into = move |path: String| {
+        reset_selection();
+        load_dir(Some(path));
+    };
+
+    let navigate_up = move || {
+        if let Some(p) = parent_path.get_untracked() {
+            reset_selection();
+            load_dir(Some(p));
+        }
+    };
+
+    let can_open = move || has_sor_extension(&filename.get());
+
+    let confirm_open = move || {
+        if !can_open() {
+            return;
+        }
+        let path = resolve_open_path(
+            &current_path.get_untracked(),
+            &filename.get_untracked(),
+            selected_path.get_untracked(),
+        );
+        leptos::logging::log!("Открываем файл: {path}");
+        close();
+    };
+
+    let select_entry = move |entry: FsEntry| {
+        selected_path.set(Some(entry.path.clone()));
+        if !entry.is_dir {
+            filename.set(entry.name.clone());
+        }
+    };
+
+    let activate_entry = move |entry: FsEntry| {
+        if entry.is_dir {
+            navigate_into(entry.path.clone());
+        } else {
+            selected_path.set(Some(entry.path.clone()));
+            filename.set(entry.name.clone());
+            confirm_open();
+        }
+    };
+
+    let filtered = move || {
+        let q = query.get().to_lowercase();
+        entries
+            .get()
+            .into_iter()
+            .filter(|e| q.is_empty() || e.name.to_lowercase().contains(&q))
+            .collect::<Vec<_>>()
+    };
+
+    view! {
+        <Show when=move || open.get()>
+            <div class=style::overlay on:click=move |_| close()>
+                <div class=style::dialog on:click=move |e| e.stop_propagation()>
+                    <div class=style::header>
+                        <img src="public/folder.svg" class=style::header_icon alt="folder" draggable="false" />
+                        <span class=style::title>"Открыть рефлектограмму"</span>
+                        <button class=style::close_btn on:click=move |_| close()>"×"</button>
+                    </div>
+
+                    <div class=style::body>
+                        <div class=style::locations>
+                            <div class=style::locations_label>"РАСПОЛОЖЕНИЯ"</div>
+                            {move || {
+                                quick_locations
+                                    .get()
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(idx, loc)| {
+                                        render_location_button(idx, loc.name.clone(), active_location, select_location)
+                                    })
+                                    .collect_view()
+                            }}
+                        </div>
+
+                        <div class=style::main_panel>
+                            <div class=style::toolbar>
+                                <button
+                                    class=style::up_btn
+                                    title="Наверх"
+                                    prop:disabled=move || parent_path.get().is_none()
+                                    on:click=move |_| navigate_up()
+                                >
+                                    "↑"
+                                </button>
+                                <div class=style::search_box>
+                                    <img src="public/search.svg" alt="search" draggable="false" />
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск в папке..."
+                                        prop:value=move || query.get()
+                                        on:input=move |e| query.set(event_target_value(&e))
+                                    />
+                                </div>
+                                <div class=style::ext_select_wrap>
+                                    <select class=style::ext_select>
+                                        <option>".sor"</option>
+                                    </select>
+                                    <img
+                                        src="public/chevron-down.svg"
+                                        class=style::ext_select_arrow
+                                        alt=""
+                                        draggable="false"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class=style::file_list>
+                                <Show when=move || loading.get()>
+                                    <div class=style::loading>"Загрузка..."</div>
+                                </Show>
+
+                                <Show when=move || !loading.get() && dir_error.get().is_some()>
+                                    <div class=style::error_message>
+                                        {move || dir_error.get().unwrap_or_default()}
+                                    </div>
+                                </Show>
+
+                                <Show when=move || !loading.get() && dir_error.get().is_none()>
+                                    {move || {
+                                        filtered()
+                                            .into_iter()
+                                            .map(|entry| render_entry_row(entry, selected_path, select_entry, activate_entry))
+                                            .collect_view()
+                                    }}
+
+                                    <Show when=move || filtered().is_empty()>
+                                        <div class=style::empty>"Файлы .sor не найдены"</div>
+                                    </Show>
+                                </Show>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class=style::footer>
+                        <span class=style::filename_label>"Имя файла:"</span>
+                        <input
+                            type="text"
+                            class=style::filename_input
+                            prop:value=move || filename.get()
+                            on:input=move |e| filename.set(event_target_value(&e))
+                        />
+                        <button class=style::cancel_btn on:click=move |_| close()>"Отмена"</button>
+                        <button
+                            class=style::open_btn
+                            prop:disabled=move || !can_open()
+                            on:click=move |_| confirm_open()
+                        >
+                            <img src="public/folder-open.svg" alt="" draggable="false" />
+                            "Открыть"
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Show>
+    }
+}
