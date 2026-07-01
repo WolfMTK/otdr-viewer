@@ -60,6 +60,7 @@
     font-size: 13px;
     color: #333;
     user-select: text;
+    -webkit-user-select: text;
 }
 
 .list {

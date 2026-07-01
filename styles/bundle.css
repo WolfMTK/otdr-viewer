@@ -584,6 +584,7 @@
     font-size: 13px;
     color: #333;
     user-select: text;
+    -webkit-user-select: text;
 }
 
 .list-dc0c07a {
@@ -865,6 +866,7 @@ body {
     margin: 0;
     background: #f3f3f1;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .resize_handle-79bc9bc {

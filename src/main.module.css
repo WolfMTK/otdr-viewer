@@ -3,6 +3,7 @@ body {
     margin: 0;
     background: #f3f3f1;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .resize_handle {
