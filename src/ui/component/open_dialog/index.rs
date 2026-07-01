@@ -253,7 +253,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
             <div class=style::overlay>
                 <div class=style::dialog>
                     <div class=style::header>
-                        <img src="public/folder.svg" class=style::header_icon alt="folder" draggable="false" />
+                        <img src="public/folder-open.svg" class=style::header_icon alt="folder" draggable="false" />
                         <span class=style::title>"Открыть рефлектограмму"</span>
                         <button class=style::close_btn on:click=move |_| close()>"×"</button>
                     </div>
