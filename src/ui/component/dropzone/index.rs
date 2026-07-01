@@ -1,11 +1,14 @@
 use leptos::prelude::*;
 use stylance::import_style;
 
+use crate::ui::component::open_dialog::index::OpenFileDialog;
+
 import_style!(style, "index.module.css");
 
 #[component]
 pub fn Dropzone() -> impl IntoView {
     let dragover = RwSignal::new(false);
+    let dialog_open = RwSignal::new(false);
 
     let card_class = move || {
         if dragover.get() {
@@ -38,8 +41,7 @@ pub fn Dropzone() -> impl IntoView {
             </div>
 
             <button class=style::open_btn
-                    on:click=move |_| {
-                    }>
+                    on:click=move |_| dialog_open.set(true)>
                 <img src="public/folder-open.svg" alt="folder" draggable="false" />
                 "Открыть файл..."
             </button>
@@ -51,5 +53,7 @@ pub fn Dropzone() -> impl IntoView {
                 <a class=style::help_link>"Что такое .sor?"</a>
             </div>
         </div>
+
+        <OpenFileDialog open=dialog_open/>
     }
 }
