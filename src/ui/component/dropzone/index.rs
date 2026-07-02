@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use stylance::import_style;
 
 use crate::ui::component::open_dialog::index::OpenFileDialog;
+use crate::ui::component::sor_info::index::SorInfoDialog;
 
 import_style!(style, "index.module.css");
 
@@ -9,6 +10,7 @@ import_style!(style, "index.module.css");
 pub fn Dropzone() -> impl IntoView {
     let dragover = RwSignal::new(false);
     let dialog_open = RwSignal::new(false);
+    let info_open = RwSignal::new(false);
 
     let card_class = move || {
         if dragover.get() {
@@ -50,10 +52,15 @@ pub fn Dropzone() -> impl IntoView {
 
             <div class=style::footer>
                 <span class=style::format>"Telcordia SR-4731 · .sor"</span>
-                <a class=style::help_link>"Что такое .sor?"</a>
+                <a class=style::help_link
+                   on:click=move |_| info_open.set(true)>
+                    "Что такое .sor?"
+                </a>
             </div>
         </div>
 
         <OpenFileDialog open=dialog_open/>
+
+        <SorInfoDialog open=info_open/>
     }
 }
