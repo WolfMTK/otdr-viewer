@@ -18,15 +18,15 @@ pub fn Sidebar(panel_open: RwSignal<bool>) -> impl IntoView {
     view! {
         <nav class=style::sidebar>
             <button class=move || btn_class(0) on:click=move |_| set_active.set(0)>
-                <img src="public/folder.svg" alt="folder" />
+                <img src="public/folder.svg" alt="folder" draggable="false" />
             </button>
 
             <button class=move || btn_class(1) on:click=move |_| set_active.set(1)>
-                <img src="public/stack.svg" alt="stack" />
+                <img src="public/stack.svg" alt="stack" draggable="false" />
             </button>
 
             <button class=move || btn_class(2) on:click=move |_| set_active.set(2)>
-                <img src="public/info.svg" alt="info" />
+                <img src="public/info.svg" alt="info" draggable="false" />
             </button>
 
             <div class=style::spacer></div>
