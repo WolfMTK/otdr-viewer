@@ -1,10 +1,10 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use stylance::import_style;
-use wasm_bindgen::prelude::Closure;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsValue;
 
 use crate::tauri::invoke;
+use crate::ui::component::helpers::close_on_escape;
 
 import_style!(style, "index.module.css");
 
@@ -174,19 +174,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 
     let close = move || open.set(false);
 
-    Effect::new(move |_| {
-        if !open.get() {
-            return;
-        }
-        let Some(win) = web_sys::window() else { return };
-        let handler = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            if e.key() == "Escape" {
-                open.set(false);
-            }
-        });
-        let _ = win.add_event_listener_with_callback("keydown", handler.as_ref().unchecked_ref());
-        handler.forget();
-    });
+    close_on_escape(open);
 
     let select_location = move |idx: usize| {
         active_location.set(idx);
