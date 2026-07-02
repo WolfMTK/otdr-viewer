@@ -1,28 +1,9 @@
 use leptos::prelude::*;
 use stylance::import_style;
-use wasm_bindgen::JsValue;
 
-use crate::tauri::invoke;
+use crate::tauri::invoke_fire_and_forget;
 
 import_style!(style, "index.module.css");
-
-fn close_window() {
-    wasm_bindgen_futures::spawn_local(async move {
-        invoke("close_window", JsValue::NULL).await;
-    })
-}
-
-fn toggle_maximize() {
-    wasm_bindgen_futures::spawn_local(async move {
-        invoke("toggle_maximize", JsValue::NULL).await;
-    })
-}
-
-fn minimize_window() {
-    wasm_bindgen_futures::spawn_local(async move {
-        invoke("minimize_window", JsValue::NULL).await;
-    })
-}
 
 #[component]
 pub fn TitleBar() -> impl IntoView {
@@ -55,11 +36,11 @@ pub fn TitleBar() -> impl IntoView {
 
             <div class=style::titlebar_controls>
                 <button class=stylance::classes!(style::dot, style::dot_green)
-                        on:click=move |_| minimize_window()/>
+                        on:click=move |_| invoke_fire_and_forget("minimize_window")/>
                 <button class=stylance::classes!(style::dot, style::dot_yellow)
-                        on:click=move |_| toggle_maximize()/>
+                        on:click=move |_| invoke_fire_and_forget("toggle_maximize")/>
                 <button class=stylance::classes!(style::dot, style::dot_red)
-                        on:click=move |_| close_window()/>
+                        on:click=move |_| invoke_fire_and_forget("close_window")/>
             </div>
         </div>
 
