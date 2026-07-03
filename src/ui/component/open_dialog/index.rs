@@ -1,9 +1,8 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use stylance::import_style;
-use wasm_bindgen::JsValue;
 
-use crate::tauri::{invoke, invoke_parsed_with_args};
+use crate::tauri::{invoke_parsed, invoke_parsed_with_args, invoke_with_args};
 use crate::ui::component::helpers::{close_on_escape, toggle_class};
 use crate::ui::context::RecentFilesVersion;
 
@@ -43,8 +42,7 @@ struct RecordRecentFileArgs {
 }
 
 async fn fetch_quick_locations() -> Vec<QuickLocation> {
-    let result = invoke("list_quick_locations", JsValue::NULL).await;
-    serde_wasm_bindgen::from_value(result).unwrap_or_default()
+    invoke_parsed("list_quick_locations").await
 }
 
 async fn fetch_directory(path: Option<String>) -> DirListing {
@@ -53,8 +51,7 @@ async fn fetch_directory(path: Option<String>) -> DirListing {
 
 fn record_recent_file(path: String, recent_files_version: RwSignal<u32>) {
     wasm_bindgen_futures::spawn_local(async move {
-        let args = serde_wasm_bindgen::to_value(&RecordRecentFileArgs { path }).unwrap_or(JsValue::NULL);
-        invoke("record_recent_file", args).await;
+        invoke_with_args("record_recent_file", &RecordRecentFileArgs { path }).await;
         recent_files_version.update(|v| *v += 1);
     });
 }
