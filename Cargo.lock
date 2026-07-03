@@ -3025,6 +3025,7 @@ dependencies = [
  "leptos",
  "serde",
  "serde-wasm-bindgen",
+ "shared-types",
  "stylance",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -4048,6 +4049,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "shared-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4651,6 +4659,7 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "shared-types",
  "sor-rs",
  "sqlx",
  "tauri",

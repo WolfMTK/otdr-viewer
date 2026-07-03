@@ -13,9 +13,10 @@ serde-wasm-bindgen = "0.6"
 console_error_panic_hook = "0.1.7"
 stylance = "0.8.4"
 web-sys = { version = "0.3.102", features = ["EventTarget", "Window", "MouseEvent", "KeyboardEvent"] }
+shared-types = { path = "shared-types" }
 
 [workspace]
-members = ["src-tauri"]
+members = ["shared-types","src-tauri"]
 
 [package.metadata.stylance]
 output_file = "./styles/bundle.css"
