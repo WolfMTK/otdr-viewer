@@ -1,5 +1,6 @@
 use leptos::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use shared_types::{DirListing, FsEntry, QuickLocation};
 use stylance::import_style;
 
 use crate::tauri::{invoke_parsed, invoke_parsed_with_args, invoke_with_args};
@@ -7,29 +8,6 @@ use crate::ui::component::helpers::{close_on_escape, toggle_class};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
-
-#[derive(Clone, PartialEq, Deserialize)]
-struct FsEntry {
-    name: String,
-    path: String,
-    is_dir: bool,
-    size_label: Option<String>,
-    modified_label: Option<String>,
-}
-
-#[derive(Clone, Deserialize, Default)]
-struct DirListing {
-    current_path: String,
-    parent_path: Option<String>,
-    entries: Vec<FsEntry>,
-    error: Option<String>,
-}
-
-#[derive(Clone, Deserialize)]
-struct QuickLocation {
-    name: String,
-    path: String,
-}
 
 #[derive(Serialize)]
 struct ListDirectoryArgs {

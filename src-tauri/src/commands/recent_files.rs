@@ -2,7 +2,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Local, Utc};
-use serde::Serialize;
+use shared_types::RecentFileEntry;
 use sqlx::FromRow;
 use tauri::State;
 
@@ -10,15 +10,6 @@ use crate::commands::sor::read_fiber_length_km;
 use crate::db::Db;
 
 const RECENT_FILES_LIMIT: i64 = 20;
-
-#[derive(Serialize, Debug)]
-pub(crate) struct RecentFileEntry {
-    path: String,
-    name: String,
-    location: String,
-    opened_at_label: String,
-    length_label: Option<String>,
-}
 
 #[derive(FromRow)]
 struct RecentFileRow {

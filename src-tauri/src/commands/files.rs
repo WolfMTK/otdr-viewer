@@ -3,35 +3,12 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use chrono::{DateTime, Local, Utc};
-use serde::Serialize;
+use shared_types::{DirListing, FsEntry, QuickLocation};
 use tauri::{Manager, Window};
 
 const KB: f64 = 1024.0;
 const MB: f64 = KB * KB;
 const SOR_EXTENSION: &str = "sor";
-
-#[derive(Serialize, Clone)]
-pub(crate) struct FsEntry {
-    name: String,
-    path: String,
-    is_dir: bool,
-    size_label: Option<String>,
-    modified_label: Option<String>,
-}
-
-#[derive(Serialize, Clone)]
-pub(crate) struct DirListing {
-    current_path: String,
-    parent_path: Option<String>,
-    entries: Vec<FsEntry>,
-    error: Option<String>,
-}
-
-#[derive(Serialize, Clone)]
-pub(crate) struct QuickLocation {
-    name: String,
-    path: String,
-}
 
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().to_string()

@@ -1,6 +1,7 @@
-use crate::ui::component::helpers::toggle_class;
 use leptos::prelude::*;
 use stylance::import_style;
+
+use crate::ui::component::helpers::toggle_class;
 
 import_style!(style, "index.module.css");
 

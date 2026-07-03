@@ -14,5 +14,9 @@ pub fn close_on_escape(open: RwSignal<bool>) {
 }
 
 pub fn toggle_class(base: &str, active: &str, condition: bool) -> String {
-    if condition { format!("{base} {active}") } else { base.to_string() }
+    if condition {
+        format!("{base} {active}")
+    } else {
+        base.to_string()
+    }
 }

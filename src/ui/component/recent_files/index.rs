@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use serde::Deserialize;
+use shared_types::RecentFileEntry;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
@@ -10,15 +10,6 @@ use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBA
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
-
-#[derive(Clone, PartialEq, Deserialize)]
-struct RecentFileEntry {
-    path: String,
-    name: String,
-    location: String,
-    opened_at_label: String,
-    length_label: Option<String>,
-}
 
 async fn fetch_recent_files() -> Vec<RecentFileEntry> {
     invoke_parsed("list_recent_files").await
