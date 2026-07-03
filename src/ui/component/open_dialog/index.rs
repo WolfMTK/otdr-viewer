@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 
 use crate::tauri::invoke;
 use crate::ui::component::helpers::close_on_escape;
-use crate::ui::context::bump_recent_files_version;
+use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
@@ -53,12 +53,12 @@ async fn fetch_directory(path: Option<String>) -> DirListing {
     serde_wasm_bindgen::from_value(result).unwrap_or_default()
 }
 
-fn record_recent_file(path: String) {
+fn record_recent_file(path: String, recent_files_version: RwSignal<u32>) {
     wasm_bindgen_futures::spawn_local(async move {
         let args = serde_wasm_bindgen::to_value(&RecordRecentFileArgs { path }).unwrap_or(JsValue::NULL);
         invoke("record_recent_file", args).await;
+        recent_files_version.update(|v| *v += 1);
     });
-    bump_recent_files_version();
 }
 
 fn has_sor_extension(name: &str) -> bool {
@@ -142,6 +142,8 @@ fn render_entry_row(
 
 #[component]
 pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
+    let RecentFilesVersion(recent_files_version) =
+        use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
     let quick_locations = RwSignal::new(Vec::<QuickLocation>::new());
     let active_location = RwSignal::new(0usize);
 
@@ -220,7 +222,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
             &filename.get_untracked(),
             selected_path.get_untracked(),
         );
-        record_recent_file(path.clone());
+        record_recent_file(path.clone(), recent_files_version);
         leptos::logging::log!("Открываем файл: {path}");
         close();
     };
