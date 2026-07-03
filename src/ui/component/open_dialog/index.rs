@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use serde::Serialize;
 use shared_types::{DirListing, FsEntry, QuickLocation};
+use std::sync::Arc;
 use stylance::import_style;
 
 use crate::tauri::{invoke_parsed, invoke_parsed_with_args, invoke_with_args};
@@ -75,17 +76,22 @@ fn render_location_button(
 fn render_entry_row(
     entry: FsEntry,
     selected_path: RwSignal<Option<String>>,
-    on_click: impl Fn(FsEntry) + Copy + 'static,
-    on_dblclick: impl Fn(FsEntry) + Copy + 'static,
+    on_click: impl Fn(&FsEntry) + Copy + Send + 'static,
+    on_dblclick: impl Fn(&FsEntry) + Copy + Send + 'static,
 ) -> impl IntoView {
-    let entry_path = entry.path.clone();
-    let entry_for_click = entry.clone();
-    let entry_for_dblclick = entry.clone();
     let icon = if entry.is_dir {
         "public/folder.svg"
     } else {
         "public/file.svg"
     };
+    let name = entry.name.clone();
+    let size = entry.size_label.clone().unwrap_or_default();
+    let date = entry.modified_label.clone().unwrap_or_default();
+    let entry_path = entry.path.clone();
+
+    let entry = Arc::new(entry);
+    let click_entry = Arc::clone(&entry);
+    let dblclick_entry = entry;
 
     view! {
         <div
@@ -96,13 +102,13 @@ fn render_entry_row(
                     selected_path.get().as_deref() == Some(entry_path.as_str()),
                 )
             }
-            on:click=move |_| on_click(entry_for_click.clone())
-            on:dblclick=move |_| on_dblclick(entry_for_dblclick.clone())
+            on:click=move |_| on_click(&click_entry)
+            on:dblclick=move |_| on_dblclick(&dblclick_entry)
         >
             <img src=icon class=style::row_icon alt="" draggable="false" />
-            <span class=style::row_name>{entry.name.clone()}</span>
-            <span class=style::row_size>{entry.size_label.clone().unwrap_or_default()}</span>
-            <span class=style::row_date>{entry.modified_label.clone().unwrap_or_default()}</span>
+            <span class=style::row_name>{name}</span>
+            <span class=style::row_size>{size}</span>
+            <span class=style::row_date>{date}</span>
         </div>
     }
 }
@@ -194,14 +200,14 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
         close();
     };
 
-    let select_entry = move |entry: FsEntry| {
+    let select_entry = move |entry: &FsEntry| {
         selected_path.set(Some(entry.path.clone()));
         if !entry.is_dir {
             filename.set(entry.name.clone());
         }
     };
 
-    let activate_entry = move |entry: FsEntry| {
+    let activate_entry = move |entry: &FsEntry| {
         if entry.is_dir {
             navigate_into(entry.path.clone());
         } else {
