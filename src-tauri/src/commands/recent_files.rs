@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Local, Utc};
 use serde::Serialize;
-use sqlx::Row;
+use sqlx::FromRow;
 use tauri::State;
 
 use crate::commands::sor::read_fiber_length_km;
@@ -18,6 +18,31 @@ pub(crate) struct RecentFileEntry {
     location: String,
     opened_at_label: String,
     length_label: Option<String>,
+}
+
+#[derive(FromRow)]
+struct RecentFileRow {
+    path: String,
+    name: String,
+    opened_at: i64,
+    length_km: Option<f64>,
+}
+
+impl From<RecentFileRow> for RecentFileEntry {
+    fn from(row: RecentFileRow) -> Self {
+        let location = Path::new(&row.path)
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+
+        Self {
+            path: row.path,
+            name: row.name,
+            location,
+            opened_at_label: format_timestamp(row.opened_at),
+            length_label: row.length_km.map(format_length_km),
+        }
+    }
 }
 
 fn now_unix() -> i64 {
@@ -52,9 +77,9 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
 
     let result = sqlx::query(
         r#"
-                INSERT INTO recent_files (path, name, opened_at, length_km)
-                VALUES (?1, ?2, ?3, ?4)
-                ON CONFLICT (path) DO UPDATE SET opened_at = excluded.opened_at
+            INSERT INTO recent_files (path, name, opened_at, length_km)
+            VALUES (?1, ?2, ?3, ?4)
+            ON CONFLICT (path) DO UPDATE SET opened_at = excluded.opened_at
         "#,
     )
     .bind(&path)
@@ -73,7 +98,7 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
 
 #[tauri::command]
 pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFileEntry>, ()> {
-    let rows = sqlx::query(
+    let rows = sqlx::query_as::<_, RecentFileRow>(
         r#"
             SELECT path, name, opened_at, length_km
             FROM recent_files
@@ -85,36 +110,13 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
     .fetch_all(&db.0)
     .await;
 
-    let rows = match rows {
-        Ok(rows) => rows,
+    match rows {
+        Ok(rows) => Ok(rows.into_iter().map(RecentFileEntry::from).collect()),
         Err(e) => {
             eprintln!("list_recent_files: не удалось получить список: {e}");
-            return Ok(Vec::new());
+            Ok(Vec::new())
         }
-    };
-
-    let entries = rows
-        .into_iter()
-        .map(|row| {
-            let path: String = row.get("path");
-            let name: String = row.get("name");
-            let opened_at: i64 = row.get("opened_at");
-            let length_km: Option<f64> = row.get("length_km");
-            let location = Path::new(&path)
-                .parent()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_default();
-            RecentFileEntry {
-                path,
-                name,
-                location,
-                opened_at_label: format_timestamp(opened_at),
-                length_label: length_km.map(format_length_km),
-            }
-        })
-        .collect();
-
-    Ok(entries)
+    }
 }
 
 #[tauri::command]
