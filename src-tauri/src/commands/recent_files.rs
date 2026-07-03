@@ -105,7 +105,7 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
                 .map(|p| p.to_string_lossy().to_string())
                 .unwrap_or_default();
             RecentFileEntry {
-                path: row.get("path"),
+                path,
                 name,
                 location,
                 opened_at_label: format_timestamp(opened_at),
