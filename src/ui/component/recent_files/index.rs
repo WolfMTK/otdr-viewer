@@ -1,55 +1,86 @@
 use leptos::prelude::*;
+use serde::Deserialize;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 
+use crate::tauri::invoke;
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
+use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
-#[derive(Clone)]
-struct RecentFile {
-    name: &'static str,
-    path: &'static str,
-    date: &'static str,
-    length: &'static str,
+#[derive(Clone, Deserialize)]
+struct RecentFileEntry {
+    path: String,
+    name: String,
+    location: String,
+    opened_at_label: String,
+    length_label: Option<String>,
 }
 
-// TODO: remove the stub after connecting the database
-fn files() -> Vec<RecentFile> {
-    vec![
-        RecentFile {
-            name: "cable_route_A1.sor",
-            path: "/home/user/measure...",
-            date: "16.06.2026",
-            length: "12.4 км",
-        },
-        RecentFile {
-            name: "test_link_campus.sor",
-            path: "/var/data/otdr/june",
-            date: "3.06.2026",
-            length: "2.7 км",
-        },
-        RecentFile {
-            name: "fiber_repair_05.sor",
-            path: "C:\\Measurements\\May",
-            date: "28.04.2026",
-            length: "6.9 км",
-        },
-        RecentFile {
-            name: "ВОЛС_магистрал...",
-            path: "D:\\Projects\\OTDR",
-            date: "10.06.2026",
-            length: "48.1 км",
-        },
-    ]
+async fn fetch_recent_files() -> Vec<RecentFileEntry> {
+    let result = invoke("list_recent_files", JsValue::NULL).await;
+    serde_wasm_bindgen::from_value(result).unwrap_or_default()
+}
+
+fn clear_recent_files() {
+    wasm_bindgen_futures::spawn_local(async move {
+        invoke("clear_recent_files", JsValue::NULL).await;
+    });
+}
+
+fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
+    let entry_path = entry.path.clone();
+    let full_path = entry.path.clone();
+    let has_length = entry.length_label.is_some();
+    let length_label = entry.length_label.clone().unwrap_or_default();
+    let item_class = move || {
+        if selected_path.get().as_deref() == Some(entry_path.as_str()) {
+            stylance::classes!(style::file_item, style::file_item_selected)
+        } else {
+            style::file_item.to_string()
+        }
+    };
+
+    view! {
+        <div
+            class=item_class
+            title=full_path
+            on:click=move |_| selected_path.set(Some(entry.path.clone()))
+        >
+            <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
+            <div class=style::file_info>
+                <div class=style::file_name>{entry.name.clone()}</div>
+                <div class=style::file_path>{entry.location.clone()}</div>
+            </div>
+            <div class=style::file_meta>
+                <div class=style::file_date>{entry.opened_at_label.clone()}</div>
+                <Show when=move || has_length>
+                    <div class=style::file_length>{length_label.clone()}</div>
+                </Show>
+            </div>
+        </div>
+    }
 }
 
 #[component]
 pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
-    let (selected, set_selected) = signal(1usize);
+    let RecentFilesVersion(version) =
+        use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
+
+    let files = RwSignal::new(Vec::<RecentFileEntry>::new());
+    let selected_path = RwSignal::new(None::<String>);
+    let query = RwSignal::new(String::new());
     let width = RwSignal::new(MIN_WIDTH);
     let dragging = RwSignal::new(false);
+
+    Effect::new(move |_| {
+        version.get();
+        wasm_bindgen_futures::spawn_local(async move {
+            files.set(fetch_recent_files().await);
+        });
+    });
 
     Effect::new(move |_| {
         let Some(win) = web_sys::window() else { return };
@@ -77,12 +108,13 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
         on_up.forget();
     });
 
-    let item_class = move |idx: usize| {
-        if selected.get() == idx {
-            stylance::classes!(style::file_item, style::file_item_selected)
-        } else {
-            style::file_item.to_string()
-        }
+    let filtered = move || {
+        let q = query.get().to_lowercase();
+        files
+            .get()
+            .into_iter()
+            .filter(|f| q.is_empty() || f.name.to_lowercase().contains(&q))
+            .collect::<Vec<_>>()
     };
 
     let panel_class = move || {
@@ -100,34 +132,31 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
 
                 <div class=style::search>
                     <img src="public/search.svg" alt="search" draggable="false" />
-                    <input type="text" placeholder="Поиск по недавним..." />
+                    <input
+                        type="text"
+                        placeholder="Поиск по недавним..."
+                        prop:value=move || query.get()
+                        on:input=move |e| query.set(event_target_value(&e))
+                    />
                 </div>
 
                 <div class=style::list>
-                    {files()
-                        .into_iter()
-                        .enumerate()
-                        .map(|(idx, f)| {
-                            view! {
-                                <div class=move || item_class(idx)
-                                     on:click=move |_| set_selected.set(idx)>
-                                    <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
-                                    <div class=style::file_info>
-                                        <div class=style::file_name>{f.name}</div>
-                                        <div class=style::file_path>{f.path}</div>
-                                    </div>
-                                    <div class=style::file_meta>
-                                        <div class=style::file_date>{f.date}</div>
-                                        <div class=style::file_length>{f.length}</div>
-                                    </div>
-                                </div>
-                            }
-                        })
-                        .collect_view()}
+                    {move || filtered().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
+
+                    <Show when=move || files.get().is_empty()>
+                        <div class=style::empty>"Пока нет открытых файлов"</div>
+                    </Show>
                 </div>
 
                 <div class=style::footer>
-                    <button class=style::clear_btn>
+                    <button
+                        class=style::clear_btn
+                        on:click=move |_| {
+                            clear_recent_files();
+                            selected_path.set(None);
+                            version.update(|v| *v += 1);
+                        }
+                    >
                         <img src="public/trash.svg" alt="trash" draggable="false" />
                         "Очистить список"
                     </button>
