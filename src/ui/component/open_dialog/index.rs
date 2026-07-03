@@ -1,7 +1,8 @@
+use std::sync::Arc;
+
 use leptos::prelude::*;
 use serde::Serialize;
 use shared_types::{DirListing, FsEntry, QuickLocation};
-use std::sync::Arc;
 use stylance::import_style;
 
 use crate::tauri::{invoke_parsed, invoke_parsed_with_args, invoke_with_args};
