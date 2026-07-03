@@ -1,12 +1,13 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::commands::sor::read_fiber_length_km;
-use crate::db::Db;
 use chrono::{DateTime, Local, Utc};
 use serde::Serialize;
 use sqlx::Row;
 use tauri::State;
+
+use crate::commands::sor::read_fiber_length_km;
+use crate::db::Db;
 
 const RECENT_FILES_LIMIT: i64 = 20;
 
@@ -44,7 +45,10 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| path.clone());
 
-    let length_km = read_fiber_length_km(&path);
+    let parse_path = path.clone();
+    let length_km = tauri::async_runtime::spawn_blocking(move || read_fiber_length_km(&parse_path))
+        .await
+        .unwrap_or(None);
 
     let result = sqlx::query(
         r#"
