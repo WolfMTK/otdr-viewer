@@ -1,0 +1,95 @@
+use serde::Serialize;
+use sor_rs::SorFile;
+
+#[derive(Serialize, Clone)]
+pub(crate) struct SorEvent {
+    number: u16,
+    distance_km: f64,
+    loss_db: f64,
+    refl_db: f64,
+    kind: &'static str,
+    comments: String,
+}
+
+#[derive(Serialize, Clone, Default)]
+pub(crate) struct SorSummary {
+    cable_id: Option<String>,
+    fiber_id: Option<String>,
+    operator: Option<String>,
+    comments: Option<String>,
+    wavelength_nm: Option<f64>,
+    otdr_supplier: Option<String>,
+    otdr_model: Option<String>,
+    otdr_serial: Option<String>,
+    pulse_widths_ns: Vec<u16>,
+    num_data_points: Option<u32>,
+    fiber_length_km: Option<f64>,
+    total_loss_db: Option<f64>,
+    orl_db: Option<f64>,
+    events: Vec<SorEvent>,
+    error: Option<String>,
+}
+
+fn summarize(sor: SorFile) -> SorSummary {
+    let fiber_length_km = sor
+        .key_events
+        .as_ref()
+        .and_then(|ke| ke.end_of_fiber())
+        .map(|e| e.distance_km)
+        .or_else(|| {
+            sor.data_points
+                .as_ref()
+                .and_then(|dp| dp.distances_km().last().copied())
+        });
+
+    let events = sor
+        .key_events
+        .as_ref()
+        .map(|ke| {
+            ke.events
+                .iter()
+                .map(|e| SorEvent {
+                    number: e.number,
+                    distance_km: e.distance_km,
+                    loss_db: e.loss_db,
+                    refl_db: e.refl_db,
+                    kind: e.subtype_str(),
+                    comments: e.comments.clone(),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    SorSummary {
+        cable_id: sor.gen_params.as_ref().map(|g| g.cable_id.clone()),
+        fiber_id: sor.gen_params.as_ref().map(|g| g.fiber_id.clone()),
+        operator: sor.gen_params.as_ref().map(|g| g.operator.clone()),
+        comments: sor.gen_params.as_ref().map(|g| g.comments.clone()),
+        wavelength_nm: sor.fxd_params.as_ref().map(|f| f.wavelength_nm),
+        otdr_supplier: sor.sup_params.as_ref().map(|s| s.supplier.clone()),
+        otdr_model: sor.sup_params.as_ref().map(|s| s.otdr_name.clone()),
+        otdr_serial: sor.sup_params.as_ref().map(|s| s.otdr_sn.clone()),
+        pulse_widths_ns: sor
+            .fxd_params
+            .as_ref()
+            .map(|f| f.pulse_widths_ns.clone())
+            .unwrap_or_default(),
+        num_data_points: sor.fxd_params.as_ref().map(|f| f.num_data_points),
+        fiber_length_km,
+        total_loss_db: sor.key_events.as_ref().map(|ke| ke.summary.total_loss_db),
+        orl_db: sor.key_events.as_ref().map(|ke| ke.summary.orl_db),
+        events,
+        error: None,
+    }
+}
+
+#[tauri::command]
+pub(crate) fn parse_sor_file(path: String) -> SorSummary {
+    match SorFile::from_file(&path, true) {
+        Ok(sor) => summarize(sor),
+        Err(e) => SorSummary {
+            error: Some(e.to_string()),
+            ..Default::default()
+        },
+    }
+}
