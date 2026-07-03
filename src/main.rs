@@ -11,7 +11,7 @@ use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::tauri::invoke;
+use crate::tauri::{invoke, invoke_with_args};
 use crate::ui::component::recent_files::index::RecentFiles;
 use crate::ui::component::sidebar::index::Sidebar;
 use crate::ui::component::status_bar::index::StatusBar;
@@ -39,8 +39,7 @@ struct ResizeArgs {
 
 fn start_resize(direction: &'static str) {
     wasm_bindgen_futures::spawn_local(async move {
-        let args = serde_wasm_bindgen::to_value(&ResizeArgs { direction }).unwrap_or(JsValue::NULL);
-        invoke("start_resize", args).await;
+        invoke_with_args("start_resize", &ResizeArgs { direction }).await;
     });
 }
 
