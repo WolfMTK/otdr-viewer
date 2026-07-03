@@ -31,16 +31,7 @@ pub(crate) struct SorSummary {
 }
 
 fn summarize(sor: SorFile) -> SorSummary {
-    let fiber_length_km = sor
-        .key_events
-        .as_ref()
-        .and_then(|ke| ke.end_of_fiber())
-        .map(|e| e.distance_km)
-        .or_else(|| {
-            sor.data_points
-                .as_ref()
-                .and_then(|dp| dp.distances_km().last().copied())
-        });
+    let fiber_length_km = fiber_length_km(&sor);
 
     let events = sor
         .key_events
@@ -83,9 +74,26 @@ fn summarize(sor: SorFile) -> SorSummary {
     }
 }
 
+fn fiber_length_km(sor: &SorFile) -> Option<f64> {
+    sor.key_events
+        .as_ref()
+        .and_then(|ke| ke.end_of_fiber())
+        .map(|e| e.distance_km)
+        .or_else(|| {
+            sor.data_points
+                .as_ref()
+                .and_then(|dp| dp.distances_km().last().copied())
+        })
+}
+
+pub(crate) fn read_fiber_length_km(path: &str) -> Option<f64> {
+    let sor = SorFile::from_file(path, false).ok()?;
+    fiber_length_km(&sor)
+}
+
 #[tauri::command]
 pub(crate) fn parse_sor_file(path: String) -> SorSummary {
-    match SorFile::from_file(&path, true) {
+    match SorFile::from_file(&path, false) {
         Ok(sor) => summarize(sor),
         Err(e) => SorSummary {
             error: Some(e.to_string()),
