@@ -33,9 +33,12 @@ pub(crate) struct SorSummary {
 fn summarize(sor: SorFile) -> SorSummary {
     let fiber_length_km = fiber_length_km(&sor);
 
-    let events = sor
-        .key_events
-        .as_ref()
+    let gen = sor.gen_params.as_ref();
+    let fxd = sor.fxd_params.as_ref();
+    let sup = sor.sup_params.as_ref();
+    let key_events = sor.key_events.as_ref();
+
+    let events = key_events
         .map(|ke| {
             ke.events
                 .iter()
@@ -52,23 +55,19 @@ fn summarize(sor: SorFile) -> SorSummary {
         .unwrap_or_default();
 
     SorSummary {
-        cable_id: sor.gen_params.as_ref().map(|g| g.cable_id.clone()),
-        fiber_id: sor.gen_params.as_ref().map(|g| g.fiber_id.clone()),
-        operator: sor.gen_params.as_ref().map(|g| g.operator.clone()),
-        comments: sor.gen_params.as_ref().map(|g| g.comments.clone()),
-        wavelength_nm: sor.fxd_params.as_ref().map(|f| f.wavelength_nm),
-        otdr_supplier: sor.sup_params.as_ref().map(|s| s.supplier.clone()),
-        otdr_model: sor.sup_params.as_ref().map(|s| s.otdr_name.clone()),
-        otdr_serial: sor.sup_params.as_ref().map(|s| s.otdr_sn.clone()),
-        pulse_widths_ns: sor
-            .fxd_params
-            .as_ref()
-            .map(|f| f.pulse_widths_ns.clone())
-            .unwrap_or_default(),
-        num_data_points: sor.fxd_params.as_ref().map(|f| f.num_data_points),
+        cable_id: gen.map(|g| g.cable_id.clone()),
+        fiber_id: gen.map(|g| g.fiber_id.clone()),
+        operator: gen.map(|g| g.operator.clone()),
+        comments: gen.map(|g| g.comments.clone()),
+        wavelength_nm: fxd.map(|f| f.wavelength_nm),
+        otdr_supplier: sup.map(|s| s.supplier.clone()),
+        otdr_model: sup.map(|s| s.otdr_name.clone()),
+        otdr_serial: sup.map(|s| s.otdr_sn.clone()),
+        pulse_widths_ns: fxd.map(|f| f.pulse_widths_ns.clone()).unwrap_or_default(),
+        num_data_points: fxd.map(|f| f.num_data_points),
         fiber_length_km,
-        total_loss_db: sor.key_events.as_ref().map(|ke| ke.summary.total_loss_db),
-        orl_db: sor.key_events.as_ref().map(|ke| ke.summary.orl_db),
+        total_loss_db: key_events.map(|ke| ke.summary.total_loss_db),
+        orl_db: key_events.map(|ke| ke.summary.orl_db),
         events,
         error: None,
     }
