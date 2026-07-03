@@ -2,9 +2,9 @@ use leptos::prelude::*;
 use serde::Deserialize;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsCast;
 
-use crate::tauri::invoke;
+use crate::tauri::{invoke_fire_and_forget, invoke_parsed};
 use crate::ui::component::helpers::toggle_class;
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
@@ -21,14 +21,7 @@ struct RecentFileEntry {
 }
 
 async fn fetch_recent_files() -> Vec<RecentFileEntry> {
-    let result = invoke("list_recent_files", JsValue::NULL).await;
-    serde_wasm_bindgen::from_value(result).unwrap_or_default()
-}
-
-fn clear_recent_files() {
-    wasm_bindgen_futures::spawn_local(async move {
-        invoke("clear_recent_files", JsValue::NULL).await;
-    });
+    invoke_parsed("list_recent_files").await
 }
 
 fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
@@ -83,13 +76,13 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
         });
     });
 
-    Effect::new(move |_| {
-        let Some(win) = web_sys::window() else { return };
-
+    if let Some(win) = web_sys::window() {
+        let move_win = win.clone();
         let on_move = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |e: web_sys::MouseEvent| {
             if dragging.get_untracked() {
-                let win_w = web_sys::window()
-                    .and_then(|w| w.inner_width().ok())
+                let win_w = move_win
+                    .inner_width()
+                    .ok()
                     .and_then(|v| v.as_f64())
                     .unwrap_or(MAX_WIDTH + SIDEBAR_WIDTH);
                 let max = (win_w * 0.45).min(MAX_WIDTH);
@@ -107,7 +100,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
         });
         let _ = win.add_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
         on_up.forget();
-    });
+    }
 
     let filtered = Memo::new(move |_| {
         let q = query.get().to_lowercase();
@@ -147,7 +140,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                     <button
                         class=style::clear_btn
                         on:click=move |_| {
-                            clear_recent_files();
+                            invoke_fire_and_forget("clear_recent_files");
                             selected_path.set(None);
                             version.update(|v| *v += 1);
                         }
