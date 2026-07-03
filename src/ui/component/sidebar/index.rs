@@ -1,3 +1,4 @@
+use crate::ui::component::helpers::toggle_class;
 use leptos::prelude::*;
 use stylance::import_style;
 
@@ -7,13 +8,7 @@ import_style!(style, "index.module.css");
 pub fn Sidebar(panel_open: RwSignal<bool>) -> impl IntoView {
     let (active, set_active) = signal(0usize);
 
-    let btn_class = move |i: usize| {
-        if active.get() == i {
-            stylance::classes!(style::icon_button, style::active)
-        } else {
-            style::icon_button.to_string()
-        }
-    };
+    let btn_class = move |i: usize| toggle_class(style::icon_button, style::active, active.get() == i);
 
     view! {
         <nav class=style::sidebar>

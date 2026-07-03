@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 use stylance::import_style;
 use wasm_bindgen::JsValue;
 
-use crate::tauri::invoke;
-use crate::ui::component::helpers::close_on_escape;
+use crate::tauri::{invoke, invoke_parsed_with_args};
+use crate::ui::component::helpers::{close_on_escape, toggle_class};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 struct FsEntry {
     name: String,
     path: String,
@@ -48,9 +48,7 @@ async fn fetch_quick_locations() -> Vec<QuickLocation> {
 }
 
 async fn fetch_directory(path: Option<String>) -> DirListing {
-    let args = serde_wasm_bindgen::to_value(&ListDirectoryArgs { path }).unwrap_or(JsValue::NULL);
-    let result = invoke("list_directory", args).await;
-    serde_wasm_bindgen::from_value(result).unwrap_or_default()
+    invoke_parsed_with_args("list_directory", &ListDirectoryArgs { path }).await
 }
 
 fn record_recent_file(path: String, recent_files_version: RwSignal<u32>) {
@@ -90,13 +88,7 @@ fn render_location_button(
 ) -> impl IntoView {
     view! {
         <button
-            class=move || {
-                if active_location.get() == idx {
-                    stylance::classes!(style::location_item, style::location_item_active)
-                } else {
-                    style::location_item.to_string()
-                }
-            }
+            class=move || toggle_class(style::location_item, style::location_item_active, active_location.get() == idx)
             on:click=move |_| on_select(idx)
         >
             <img src="public/folder.svg" class=style::location_icon alt="" draggable="false" />
@@ -123,11 +115,11 @@ fn render_entry_row(
     view! {
         <div
             class=move || {
-                if selected_path.get().as_deref() == Some(entry_path.as_str()) {
-                    stylance::classes!(style::file_row, style::file_row_active)
-                } else {
-                    style::file_row.to_string()
-                }
+                toggle_class(
+                    style::file_row,
+                    style::file_row_active,
+                    selected_path.get().as_deref() == Some(entry_path.as_str()),
+                )
             }
             on:click=move |_| on_click(entry_for_click.clone())
             on:dblclick=move |_| on_dblclick(entry_for_dblclick.clone())
@@ -244,14 +236,14 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
         }
     };
 
-    let filtered = move || {
+    let filtered = Memo::new(move |_| {
         let q = query.get().to_lowercase();
         entries
             .get()
             .into_iter()
             .filter(|e| q.is_empty() || e.name.to_lowercase().contains(&q))
             .collect::<Vec<_>>()
-    };
+    });
 
     view! {
         <Show when=move || open.get()>
@@ -323,13 +315,14 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 
                                 <Show when=move || !loading.get() && dir_error.get().is_none()>
                                     {move || {
-                                        filtered()
+                                        filtered
+                                            .get()
                                             .into_iter()
                                             .map(|entry| render_entry_row(entry, selected_path, select_entry, activate_entry))
                                             .collect_view()
                                     }}
 
-                                    <Show when=move || filtered().is_empty()>
+                                    <Show when=move || filtered.with(|f| f.is_empty())>
                                         <div class=style::empty>"Файлы .sor не найдены"</div>
                                     </Show>
                                 </Show>

@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 use stylance::import_style;
-
+use crate::ui::component::helpers::toggle_class;
 use crate::ui::component::open_dialog::index::OpenFileDialog;
 use crate::ui::component::sor_info::index::SorInfoDialog;
 
@@ -12,13 +12,7 @@ pub fn Dropzone() -> impl IntoView {
     let dialog_open = RwSignal::new(false);
     let info_open = RwSignal::new(false);
 
-    let card_class = move || {
-        if dragover.get() {
-            stylance::classes!(style::card, style::card_dragover)
-        } else {
-            style::card.to_string()
-        }
-    };
+    let card_class = move || toggle_class(style::card, style::card_dragover, dragover.get());
 
     view! {
         <div

@@ -5,12 +5,13 @@ use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 
 use crate::tauri::invoke;
+use crate::ui::component::helpers::toggle_class;
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 struct RecentFileEntry {
     path: String,
     name: String,
@@ -36,11 +37,11 @@ fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>)
     let has_length = entry.length_label.is_some();
     let length_label = entry.length_label.clone().unwrap_or_default();
     let item_class = move || {
-        if selected_path.get().as_deref() == Some(entry_path.as_str()) {
-            stylance::classes!(style::file_item, style::file_item_selected)
-        } else {
-            style::file_item.to_string()
-        }
+        toggle_class(
+            style::file_item,
+            style::file_item_selected,
+            selected_path.get().as_deref() == Some(entry_path.as_str()),
+        )
     };
 
     view! {
@@ -108,22 +109,16 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
         on_up.forget();
     });
 
-    let filtered = move || {
+    let filtered = Memo::new(move |_| {
         let q = query.get().to_lowercase();
         files
             .get()
             .into_iter()
             .filter(|f| q.is_empty() || f.name.to_lowercase().contains(&q))
             .collect::<Vec<_>>()
-    };
+    });
 
-    let panel_class = move || {
-        if dragging.get() {
-            stylance::classes!(style::panel, style::panel_dragging)
-        } else {
-            style::panel.to_string()
-        }
-    };
+    let panel_class = move || toggle_class(style::panel, style::panel_dragging, dragging.get());
 
     view! {
         <Show when=move || panel_open.get()>
@@ -141,7 +136,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                 </div>
 
                 <div class=style::list>
-                    {move || filtered().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
+                    {move || filtered.get().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
 
                     <Show when=move || files.get().is_empty()>
                         <div class=style::empty>"Пока нет открытых файлов"</div>
