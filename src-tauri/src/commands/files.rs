@@ -120,3 +120,56 @@ pub(crate) fn list_quick_locations(window: Window) -> Vec<QuickLocation> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+    use rstest::rstest;
+    use shared_types::FsEntry;
+    use crate::commands::files::{format_size, is_sor_file, sort_entries};
+
+    #[rstest]
+    #[case(0, "0 Б")]
+    #[case(1023, "1023 Б")]
+    #[case(1024, "1 КБ")]
+    #[case(1025, "2 КБ")]
+    #[case(1536, "2 КБ")]
+    #[case(1024 * 1024 - 1, "1024 КБ")]
+    #[case(1024 * 1024, "1.0 МБ")]
+    fn format_size_cases(#[case] bytes: u64, #[case] expected: &str) {
+        assert_eq!(format_size(bytes), expected);
+    }
+
+    #[rstest]
+    #[case("trace.sor", true)]
+    #[case("TRACE.SOR", true)]
+    #[case("trace.txt", false)]
+    #[case("trace", false)]
+    #[case(".sor", false)]
+    fn is_sor_file_cases(#[case] name: &str, #[case] expected: bool) {
+        assert_eq!(is_sor_file(Path::new(name)), expected);
+    }
+
+    fn entry(name: &str, is_dir: bool) -> FsEntry {
+        FsEntry {
+            name: name.to_string(),
+            path: format!("/x/{name}"),
+            is_dir,
+            size_label: None,
+            modified_label: None,
+        }
+    }
+
+    #[test]
+    fn sort_entries_dirs_first_then_case_insensitive_alpha() {
+        let mut entries = vec![
+            entry("b.sor", false),
+            entry("Zeta", true),
+            entry("A.sor", false),
+            entry("alpha", true),
+        ];
+        sort_entries(&mut entries);
+        let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+        assert_eq!(names, ["alpha", "Zeta", "A.sor", "b.sor"]);
+    }
+}
