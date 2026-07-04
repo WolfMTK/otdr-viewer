@@ -1,11 +1,8 @@
-use leptos::prelude::{
-    mount_to_body, signal, ClassAttribute, CollectView, CustomAttribute, ElementChild, Get, OnAttribute, RwSignal, Set,
-    StyleAttribute,
-};
 pub mod tauri;
 mod ui;
 
-use leptos::{view, web_sys};
+use leptos::prelude::*;
+use leptos::web_sys;
 use serde::Serialize;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
