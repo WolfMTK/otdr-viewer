@@ -6,6 +6,7 @@ use shared_types::RecentFileEntry;
 use sqlx::FromRow;
 use tauri::State;
 
+use crate::commands::command_error;
 use crate::commands::sor::read_fiber_length_km;
 use crate::db::Db;
 
@@ -80,10 +81,7 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
     .execute(&db.0)
     .await;
 
-    result.map_err(|e| {
-        log::error!("record_recent_file: не удалось сохранить запись: {e}");
-        format!("Не удалось сохранить файл в списке недавних: {e}")
-    })?;
+    result.map_err(|e| command_error("record_recent_file", "Не удалось сохранить файл в списке недавних", e))?;
 
     Ok(())
 }
@@ -102,13 +100,8 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
     .fetch_all(&db.0)
     .await;
 
-    match rows {
-        Ok(rows) => Ok(rows.into_iter().map(RecentFileEntry::from).collect()),
-        Err(e) => {
-            log::error!("list_recent_files: не удалось получить список: {e}");
-            Err(format!("Не удалось загрузить список недавних файлов: {e}"))
-        }
-    }
+    rows.map(|rows| rows.into_iter().map(RecentFileEntry::from).collect())
+        .map_err(|e| command_error("list_recent_files", "Не удалось загрузить список недавних файлов", e))
 }
 
 #[tauri::command]
@@ -116,10 +109,7 @@ pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), String> 
     sqlx::query("DELETE FROM recent_files")
         .execute(&db.0)
         .await
-        .map_err(|e| {
-            log::error!("clear_recent_files: не удалось очистить список: {e}");
-            format!("Не удалось очистить список недавних файлов: {e}")
-        })?;
+        .map_err(|e| command_error("clear_recent_files", "Не удалось очистить список недавних файлов", e))?;
 
     Ok(())
 }
