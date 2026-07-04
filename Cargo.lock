@@ -3177,7 +3177,6 @@ dependencies = [
  "serde-wasm-bindgen",
  "shared-types",
  "stylance",
- "tauri-plugin-log",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

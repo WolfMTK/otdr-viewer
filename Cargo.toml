@@ -14,7 +14,6 @@ console_error_panic_hook = "0.1.7"
 stylance = "0.8.4"
 web-sys = { version = "0.3.102", features = ["EventTarget", "Window", "MouseEvent", "KeyboardEvent"] }
 shared-types = { path = "shared-types" }
-tauri-plugin-log = "2.8.0"
 
 [workspace]
 members = ["shared-types","src-tauri"]
