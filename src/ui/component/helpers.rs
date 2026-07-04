@@ -1,5 +1,5 @@
-use leptos::__reexports::send_wrapper::SendWrapper;
 use leptos::prelude::{on_cleanup, GetUntracked, RwSignal, Set};
+use send_wrapper::SendWrapper;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 
