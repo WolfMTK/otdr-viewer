@@ -1,34 +1,5 @@
-use serde::Serialize;
+use shared_types::{SorEvent, SorSummary};
 use sor_rs::SorFile;
-
-#[derive(Serialize, Clone)]
-pub(crate) struct SorEvent {
-    number: u16,
-    distance_km: f64,
-    loss_db: f64,
-    refl_db: f64,
-    kind: &'static str,
-    comments: String,
-}
-
-#[derive(Serialize, Clone, Default)]
-pub(crate) struct SorSummary {
-    cable_id: Option<String>,
-    fiber_id: Option<String>,
-    operator: Option<String>,
-    comments: Option<String>,
-    wavelength_nm: Option<f64>,
-    otdr_supplier: Option<String>,
-    otdr_model: Option<String>,
-    otdr_serial: Option<String>,
-    pulse_widths_ns: Vec<u16>,
-    num_data_points: Option<u32>,
-    fiber_length_km: Option<f64>,
-    total_loss_db: Option<f64>,
-    orl_db: Option<f64>,
-    events: Vec<SorEvent>,
-    error: Option<String>,
-}
 
 fn summarize(sor: SorFile) -> SorSummary {
     let fiber_length_km = fiber_length_km(&sor);
@@ -47,7 +18,7 @@ fn summarize(sor: SorFile) -> SorSummary {
                     distance_km: e.distance_km,
                     loss_db: e.loss_db,
                     refl_db: e.refl_db,
-                    kind: e.subtype_str(),
+                    kind: e.subtype_str().to_string(),
                     comments: e.comments.clone(),
                 })
                 .collect()
