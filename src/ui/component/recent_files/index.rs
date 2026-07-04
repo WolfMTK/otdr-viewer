@@ -6,7 +6,7 @@ use wasm_bindgen::JsCast;
 
 use crate::tauri::{invoke_and_wait, invoke_parsed};
 use crate::ui::component::helpers::toggle_class;
-use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
+use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, PANEL_MAX_WINDOW_FRACTION, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
@@ -76,7 +76,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                     .ok()
                     .and_then(|v| v.as_f64())
                     .unwrap_or(MAX_WIDTH + SIDEBAR_WIDTH);
-                let max = (win_w * 0.45).min(MAX_WIDTH);
+                let max = (win_w * PANEL_MAX_WINDOW_FRACTION).min(MAX_WIDTH);
                 let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, max);
                 width.set(w);
             }
