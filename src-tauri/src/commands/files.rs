@@ -160,7 +160,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[rstest]
     fn sort_entries_dirs_first_then_case_insensitive_alpha() {
         let mut entries = vec![
             entry("b.sor", false),
