@@ -1,3 +1,14 @@
+.overlay-217446b {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 20, 18, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+}
+
+
 .card-2339a83 {
     width: clamp(420px, 100%, clamp(460px, 45vw, 760px));
     flex-shrink: 0;
@@ -108,16 +119,6 @@
     text-decoration: underline;
 }
 
-
-.overlay-eb74ae9 {
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 20, 18, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20000;
-}
 
 .dialog-eb74ae9 {
     width: 720px;
@@ -758,16 +759,6 @@
     transform: rotate(180deg);
 }
 
-
-.overlay-80cd8c0 {
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 20, 18, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20000;
-}
 
 .dialog-80cd8c0 {
     width: 480px;
