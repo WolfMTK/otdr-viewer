@@ -1,12 +1,11 @@
+use leptos::ev;
 use leptos::prelude::*;
-use send_wrapper::SendWrapper;
+use leptos_use::{use_event_listener, use_window};
 use shared_types::RecentFileEntry;
 use stylance::import_style;
-use wasm_bindgen::prelude::Closure;
-use wasm_bindgen::JsCast;
 
 use crate::tauri::{try_invoke, try_invoke_parsed};
-use crate::ui::component::helpers::toggle_class;
+use crate::ui::component::helpers::{filter_by_name, toggle_class, SearchBox};
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, PANEL_MAX_WINDOW_FRACTION, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
 
@@ -76,48 +75,35 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
             .unwrap_or(false)
     });
 
-    if let Some(win) = web_sys::window() {
-        let move_win = win.clone();
-        let on_move = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |e: web_sys::MouseEvent| {
-            if dragging.get_untracked() {
-                let win_w = move_win
-                    .inner_width()
-                    .ok()
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(MAX_WIDTH + SIDEBAR_WIDTH);
-                let max = (win_w * PANEL_MAX_WINDOW_FRACTION).min(MAX_WIDTH);
-                let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, max);
-                width.set(w);
-            }
-        });
-
-        let on_up = Closure::<dyn FnMut()>::new(move || {
-            if dragging.get_untracked() {
-                dragging.set(false);
-            }
-        });
-
-        let _ = win.add_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
-        let _ = win.add_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
-
-        let cleanup = SendWrapper::new((win, on_move, on_up));
-        on_cleanup(move || {
-            let (win, on_move, on_up) = cleanup.take();
-            let _ = win.remove_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
-            let _ = win.remove_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
-        });
-    }
-
-    let filtered = Memo::new(move |_| {
-        let q = query.get().to_lowercase();
-        files_res
-            .get()
-            .and_then(|r| r.as_ref().ok().cloned())
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|f| q.is_empty() || f.name.to_lowercase().contains(&q))
-            .collect::<Vec<_>>()
+    let _ = use_event_listener(use_window(), ev::mousemove, move |e| {
+        if dragging.get_untracked() {
+            let win_w = window()
+                .inner_width()
+                .ok()
+                .and_then(|v| v.as_f64())
+                .unwrap_or(MAX_WIDTH + SIDEBAR_WIDTH);
+            let max = (win_w * PANEL_MAX_WINDOW_FRACTION).min(MAX_WIDTH);
+            let w = (e.client_x() as f64 - SIDEBAR_WIDTH).clamp(MIN_WIDTH, max);
+            width.set(w);
+        }
     });
+
+    let _ = use_event_listener(use_window(), ev::mouseup, move |_| {
+        if dragging.get_untracked() {
+            dragging.set(false);
+        }
+    });
+
+    let filtered = filter_by_name(
+        move || {
+            files_res
+                .get()
+                .and_then(|r| r.as_ref().ok().cloned())
+                .unwrap_or_default()
+        },
+        query,
+        |f| &f.name,
+    );
 
     let panel_class = move || toggle_class(style::panel, style::panel_dragging, dragging.get());
 
@@ -126,15 +112,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
             <aside class=panel_class style:width=move || format!("{}px", width.get())>
                 <div class=style::header>"Последние файлы"</div>
 
-                <div class=style::search>
-                    <img src="public/search.svg" alt="search" draggable="false" />
-                    <input
-                        type="text"
-                        placeholder="Поиск по недавним..."
-                        prop:value=move || query.get()
-                        on:input=move |e| query.set(event_target_value(&e))
-                    />
-                </div>
+                <SearchBox query=query placeholder="Поиск по недавним..." class=style::search/>
 
                 <div class=style::list>
                     <Show when=move || shown_error.get().is_some()>

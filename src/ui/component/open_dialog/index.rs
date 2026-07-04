@@ -6,7 +6,7 @@ use shared_types::{DirListing, FsEntry, QuickLocation};
 use stylance::import_style;
 
 use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed, try_invoke_with_args};
-use crate::ui::component::helpers::{close_on_escape, toggle_class};
+use crate::ui::component::helpers::{close_on_escape, filter_by_name, toggle_class, SearchBox};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
@@ -226,14 +226,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
         }
     };
 
-    let filtered = Memo::new(move |_| {
-        let q = query.get().to_lowercase();
-        entries
-            .get()
-            .into_iter()
-            .filter(|e| q.is_empty() || e.name.to_lowercase().contains(&q))
-            .collect::<Vec<_>>()
-    });
+    let filtered = filter_by_name(move || entries.get(), query, |e| &e.name);
 
     view! {
         <Show when=move || open.get()>
@@ -270,15 +263,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
                                 >
                                     "↑"
                                 </button>
-                                <div class=style::search_box>
-                                    <img src="public/search.svg" alt="search" draggable="false" />
-                                    <input
-                                        type="text"
-                                        placeholder="Поиск в папке..."
-                                        prop:value=move || query.get()
-                                        on:input=move |e| query.set(event_target_value(&e))
-                                    />
-                                </div>
+                                <SearchBox query=query placeholder="Поиск в папке..." class=style::search_box/>
                                 <div class=style::ext_select_wrap>
                                     <select class=style::ext_select>
                                         <option>".sor"</option>
