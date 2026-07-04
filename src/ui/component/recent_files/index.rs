@@ -4,7 +4,7 @@ use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 
-use crate::tauri::{invoke_fire_and_forget, invoke_parsed};
+use crate::tauri::{invoke_and_wait, invoke_parsed};
 use crate::ui::component::helpers::toggle_class;
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
@@ -131,9 +131,11 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                     <button
                         class=style::clear_btn
                         on:click=move |_| {
-                            invoke_fire_and_forget("clear_recent_files");
                             selected_path.set(None);
-                            version.update(|v| *v += 1);
+                            wasm_bindgen_futures::spawn_local(async move {
+                                invoke_and_wait("clear_recent_files").await;
+                                version.update(|v| *v += 1);
+                            });
                         }
                     >
                         <img src="public/trash.svg" alt="trash" draggable="false" />
@@ -141,7 +143,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                     </button>
                 </div>
 
-                <div class=style::resize_handle
+        <div class=style::resize_handle
                      on:mousedown=move |e| {
                          e.prevent_default();
                          dragging.set(true);

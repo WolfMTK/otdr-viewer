@@ -30,3 +30,7 @@ pub async fn invoke_parsed_with_args<A: Serialize, T: DeserializeOwned + Default
 pub async fn invoke_with_args<A: Serialize>(cmd: &str, args: &A) {
     invoke(cmd, to_js_args(args)).await;
 }
+
+pub async fn invoke_and_wait(cmd: &str) {
+    invoke(cmd, JsValue::NULL).await;
+}
