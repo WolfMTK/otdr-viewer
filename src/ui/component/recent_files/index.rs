@@ -17,9 +17,9 @@ async fn fetch_recent_files() -> Vec<RecentFileEntry> {
 
 fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
     let entry_path = entry.path.clone();
-    let full_path = entry.path.clone();
+    let click_path = entry.path.clone();
     let has_length = entry.length_label.is_some();
-    let length_label = entry.length_label.clone().unwrap_or_default();
+    let length_label = entry.length_label.unwrap_or_default();
     let item_class = move || {
         toggle_class(
             style::file_item,
@@ -31,16 +31,16 @@ fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>)
     view! {
         <div
             class=item_class
-            title=full_path
-            on:click=move |_| selected_path.set(Some(entry.path.clone()))
+            title=entry.path
+            on:click=move |_| selected_path.set(Some(click_path.clone()))
         >
             <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
             <div class=style::file_info>
-                <div class=style::file_name>{entry.name.clone()}</div>
-                <div class=style::file_path>{entry.location.clone()}</div>
+                <div class=style::file_name>{entry.name}</div>
+                <div class=style::file_path>{entry.location}</div>
             </div>
             <div class=style::file_meta>
-                <div class=style::file_date>{entry.opened_at_label.clone()}</div>
+                <div class=style::file_date>{entry.opened_at_label}</div>
                 <Show when=move || has_length>
                     <div class=style::file_length>{length_label.clone()}</div>
                 </Show>
