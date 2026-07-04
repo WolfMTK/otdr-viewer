@@ -15,6 +15,9 @@ stylance = "0.8.4"
 web-sys = { version = "0.3.102", features = ["EventTarget", "Window", "MouseEvent", "KeyboardEvent"] }
 shared-types = { path = "shared-types" }
 
+[dev-dependencies]
+rstest = "0.26.1"
+
 [workspace]
 members = ["shared-types","src-tauri"]
 
