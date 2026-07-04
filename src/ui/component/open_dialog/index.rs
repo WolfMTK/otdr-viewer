@@ -6,7 +6,8 @@ use shared_types::{DirListing, FsEntry, QuickLocation};
 use stylance::import_style;
 
 use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed, try_invoke_with_args};
-use crate::ui::component::helpers::{close_on_escape, filter_by_name, toggle_class, SearchBox};
+use crate::ui::component::dialog_shell::index::DialogShell;
+use crate::ui::component::helpers::{filter_by_name, toggle_class, SearchBox};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
@@ -172,8 +173,6 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 
     let close = move || open.set(false);
 
-    close_on_escape(open);
-
     let select_location = move |idx: usize| {
         active_location.set(idx);
         reset_selection();
@@ -229,101 +228,97 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
     let filtered = filter_by_name(move || entries.get(), query, |e| &e.name);
 
     view! {
-        <Show when=move || open.get()>
-            <div class=style::overlay>
-                <div class=style::dialog>
-                    <div class=style::header>
-                        <img src="public/folder-open.svg" class=style::header_icon alt="folder" draggable="false" />
-                        <span class=style::title>"Открыть рефлектограмму"</span>
-                        <button class=style::close_btn on:click=move |_| close()>"×"</button>
-                    </div>
+        <DialogShell open=open class=style::dialog>
+            <div class=style::header>
+                <img src="public/folder-open.svg" class=style::header_icon alt="folder" draggable="false" />
+                <span class=style::title>"Открыть рефлектограмму"</span>
+                <button class=style::close_btn on:click=move |_| close()>"×"</button>
+            </div>
 
-                    <div class=style::body>
-                        <div class=style::locations>
-                            <div class=style::locations_label>"РАСПОЛОЖЕНИЯ"</div>
-                            {move || {
-                                quick_locations
-                                    .get()
-                                    .into_iter()
-                                    .enumerate()
-                                    .map(|(idx, loc)| {
-                                        render_location_button(idx, loc.name.clone(), active_location, select_location)
-                                    })
-                                    .collect_view()
-                            }}
-                        </div>
+            <div class=style::body>
+                <div class=style::locations>
+                    <div class=style::locations_label>"РАСПОЛОЖЕНИЯ"</div>
+                    {move || {
+                        quick_locations
+                            .get()
+                            .into_iter()
+                            .enumerate()
+                            .map(|(idx, loc)| {
+                                render_location_button(idx, loc.name.clone(), active_location, select_location)
+                            })
+                            .collect_view()
+                    }}
+                </div>
 
-                        <div class=style::main_panel>
-                            <div class=style::toolbar>
-                                <button
-                                    class=style::up_btn
-                                    title="Наверх"
-                                    prop:disabled=move || parent_path.get().is_none()
-                                    on:click=move |_| navigate_up()
-                                >
-                                    "↑"
-                                </button>
-                                <SearchBox query=query placeholder="Поиск в папке..." class=style::search_box/>
-                                <div class=style::ext_select_wrap>
-                                    <select class=style::ext_select>
-                                        <option>".sor"</option>
-                                    </select>
-                                    <img
-                                        src="public/chevron-down.svg"
-                                        class=style::ext_select_arrow
-                                        alt=""
-                                        draggable="false"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class=style::file_list>
-                                <Show when=move || loading.get()>
-                                    <div class=style::loading>"Загрузка..."</div>
-                                </Show>
-
-                                <Show when=move || !loading.get() && dir_error.get().is_some()>
-                                    <div class=style::error_message>
-                                        {move || dir_error.get().unwrap_or_default()}
-                                    </div>
-                                </Show>
-
-                                <Show when=move || !loading.get() && dir_error.get().is_none()>
-                                    <For
-                                        each=move || filtered.get()
-                                        key=|entry| entry.path.clone()
-                                        children=move |entry| render_entry_row(entry, selected_path, select_entry, activate_entry)
-                                    />
-
-                                    <Show when=move || filtered.with(|f| f.is_empty())>
-                                        <div class=style::empty>"Файлы .sor не найдены"</div>
-                                    </Show>
-                                </Show>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class=style::footer>
-                        <span class=style::filename_label>"Имя файла:"</span>
-                        <input
-                            type="text"
-                            class=style::filename_input
-                            prop:value=move || filename.get()
-                            on:input=move |e| filename.set(event_target_value(&e))
-                        />
-                        <button class=style::cancel_btn on:click=move |_| close()>"Отмена"</button>
+                <div class=style::main_panel>
+                    <div class=style::toolbar>
                         <button
-                            class=style::open_btn
-                            prop:disabled=move || !can_open()
-                            on:click=move |_| confirm_open()
+                            class=style::up_btn
+                            title="Наверх"
+                            prop:disabled=move || parent_path.get().is_none()
+                            on:click=move |_| navigate_up()
                         >
-                            <img src="public/folder-open.svg" alt="" draggable="false" />
-                            "Открыть"
+                            "↑"
                         </button>
+                        <SearchBox query=query placeholder="Поиск в папке..." class=style::search_box/>
+                        <div class=style::ext_select_wrap>
+                            <select class=style::ext_select>
+                                <option>".sor"</option>
+                            </select>
+                            <img
+                                src="public/chevron-down.svg"
+                                class=style::ext_select_arrow
+                                alt=""
+                                draggable="false"
+                            />
+                        </div>
+                    </div>
+
+                    <div class=style::file_list>
+                        <Show when=move || loading.get()>
+                            <div class=style::loading>"Загрузка..."</div>
+                        </Show>
+
+                        <Show when=move || !loading.get() && dir_error.get().is_some()>
+                            <div class=style::error_message>
+                                {move || dir_error.get().unwrap_or_default()}
+                            </div>
+                        </Show>
+
+                        <Show when=move || !loading.get() && dir_error.get().is_none()>
+                            <For
+                                each=move || filtered.get()
+                                key=|entry| entry.path.clone()
+                                children=move |entry| render_entry_row(entry, selected_path, select_entry, activate_entry)
+                            />
+
+                            <Show when=move || filtered.with(|f| f.is_empty())>
+                                <div class=style::empty>"Файлы .sor не найдены"</div>
+                            </Show>
+                        </Show>
                     </div>
                 </div>
             </div>
-        </Show>
+
+            <div class=style::footer>
+                <span class=style::filename_label>"Имя файла:"</span>
+                <input
+                    type="text"
+                    class=style::filename_input
+                    prop:value=move || filename.get()
+                    on:input=move |e| filename.set(event_target_value(&e))
+                />
+                <button class=style::cancel_btn on:click=move |_| close()>"Отмена"</button>
+                <button
+                    class=style::open_btn
+                    prop:disabled=move || !can_open()
+                    on:click=move |_| confirm_open()
+                >
+                    <img src="public/folder-open.svg" alt="" draggable="false" />
+                    "Открыть"
+                </button>
+            </div>
+        </DialogShell>
     }
 }
 

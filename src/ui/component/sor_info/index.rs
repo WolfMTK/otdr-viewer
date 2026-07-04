@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use stylance::import_style;
 
-use crate::ui::component::helpers::close_on_escape;
+use crate::ui::component::dialog_shell::index::DialogShell;
 
 import_style!(style, "index.module.css");
 
@@ -54,38 +54,33 @@ fn render_section(section: &InfoSection) -> impl IntoView {
 #[component]
 pub fn SorInfoDialog(open: RwSignal<bool>) -> impl IntoView {
     let close = move || open.set(false);
-    close_on_escape(open);
 
     view! {
-        <Show when=move || open.get()>
-            <div class=style::overlay>
-                <div class=style::dialog>
-                    <div class=style::header>
-                        <div class=style::icon_wrap>
-                            <img src="public/info.svg" alt="" draggable="false" />
-                        </div>
-                        <button class=style::close_btn on:click=move |_| close()>"×"</button>
-                    </div>
-
-                    <div class=style::intro>
-                        <h2 class=style::title>"Что такое файл .sor?"</h2>
-                        <p class=style::subtitle>
-                            "Файл с результатом измерения оптического волокна рефлектометром (OTDR)."
-                        </p>
-                    </div>
-
-                    <div class=style::sections>
-                        {SECTIONS.iter().map(render_section).collect_view()}
-                    </div>
-
-                    <div class=style::footer>
-                        <span class=style::footer_note>
-                            "Расширение: .sor · Telcordia SR-4731 · совместимо с оборудованием EXFO, VIAVI, Yokogawa"
-                        </span>
-                        <button class=style::confirm_btn on:click=move |_| close()>"Понятно"</button>
-                    </div>
+        <DialogShell open=open class=style::dialog>
+            <div class=style::header>
+                <div class=style::icon_wrap>
+                    <img src="public/info.svg" alt="" draggable="false" />
                 </div>
+                <button class=style::close_btn on:click=move |_| close()>"×"</button>
             </div>
-        </Show>
+
+            <div class=style::intro>
+                <h2 class=style::title>"Что такое файл .sor?"</h2>
+                <p class=style::subtitle>
+                    "Файл с результатом измерения оптического волокна рефлектометром (OTDR)."
+                </p>
+            </div>
+
+            <div class=style::sections>
+                {SECTIONS.iter().map(render_section).collect_view()}
+            </div>
+
+            <div class=style::footer>
+                <span class=style::footer_note>
+                    "Расширение: .sor · Telcordia SR-4731 · совместимо с оборудованием EXFO, VIAVI, Yokogawa"
+                </span>
+                <button class=style::confirm_btn on:click=move |_| close()>"Понятно"</button>
+            </div>
+        </DialogShell>
     }
 }

@@ -1,3 +1,4 @@
+pub mod dialog_shell;
 pub mod dropzone;
 mod helpers;
 pub mod open_dialog;
