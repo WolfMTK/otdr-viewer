@@ -3180,6 +3180,7 @@ dependencies = [
  "js-sys",
  "leptos",
  "rstest",
+ "send_wrapper",
  "serde",
  "serde-wasm-bindgen",
  "shared-types",
