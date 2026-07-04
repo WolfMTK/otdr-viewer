@@ -122,6 +122,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
         use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
     let quick_locations = RwSignal::new(Vec::<QuickLocation>::new());
     let active_location = RwSignal::new(0usize);
+    let request_id = StoredValue::new(0u64);
 
     let current_path = RwSignal::new(String::new());
     let parent_path = RwSignal::new(None::<String>);
@@ -141,9 +142,14 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
     };
 
     let load_dir = move |path: Option<String>| {
+        request_id.update_value(|v| *v += 1);
+        let id = request_id.get_value();
         loading.set(true);
         wasm_bindgen_futures::spawn_local(async move {
             let listing = fetch_directory(path).await;
+            if request_id.get_value() != id {
+                return;
+            }
             current_path.set(listing.current_path);
             parent_path.set(listing.parent_path);
             entries.set(listing.entries);
@@ -298,13 +304,11 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
                                 </Show>
 
                                 <Show when=move || !loading.get() && dir_error.get().is_none()>
-                                    {move || {
-                                        filtered
-                                            .get()
-                                            .into_iter()
-                                            .map(|entry| render_entry_row(entry, selected_path, select_entry, activate_entry))
-                                            .collect_view()
-                                    }}
+                                    <For
+                                        each=move || filtered.get()
+                                        key=|entry| entry.path.clone()
+                                        children=move |entry| render_entry_row(entry, selected_path, select_entry, activate_entry)
+                                    />
 
                                     <Show when=move || filtered.with(|f| f.is_empty())>
                                         <div class=style::empty>"Файлы .sor не найдены"</div>
