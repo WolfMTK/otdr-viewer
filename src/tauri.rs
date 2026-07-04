@@ -47,18 +47,6 @@ pub async fn try_invoke(cmd: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn invoke_parsed<T: DeserializeOwned + Default>(cmd: &str) -> T {
-    serde_wasm_bindgen::from_value(invoke(cmd, JsValue::NULL).await).unwrap_or_default()
-}
-
 pub async fn invoke_parsed_with_args<A: Serialize, T: DeserializeOwned + Default>(cmd: &str, args: &A) -> T {
     try_invoke_parsed_with_args(cmd, args).await.unwrap_or_default()
-}
-
-pub async fn invoke_with_args<A: Serialize>(cmd: &str, args: &A) {
-    invoke(cmd, to_js_args(args)).await;
-}
-
-pub async fn invoke_and_wait(cmd: &str) {
-    invoke(cmd, JsValue::NULL).await;
 }
