@@ -81,7 +81,7 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
     .await;
 
     if let Err(e) = result {
-        eprintln!("record_recent_file: не удалось сохранить запись: {e}");
+        log::error!("record_recent_file: не удалось сохранить запись: {e}");
     }
 
     Ok(())
@@ -104,7 +104,7 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
     match rows {
         Ok(rows) => Ok(rows.into_iter().map(RecentFileEntry::from).collect()),
         Err(e) => {
-            eprintln!("list_recent_files: не удалось получить список: {e}");
+            log::error!("list_recent_files: не удалось получить список: {e}");
             Ok(Vec::new())
         }
     }
@@ -113,7 +113,7 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
 #[tauri::command]
 pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), ()> {
     if let Err(e) = sqlx::query("DELETE FROM recent_files").execute(&db.0).await {
-        eprintln!("clear_recent_files: не удалось очистить список: {e}");
+        log::error!("clear_recent_files: не удалось очистить список: {e}");
     }
 
     Ok(())

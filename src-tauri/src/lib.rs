@@ -10,10 +10,15 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let pool = tauri::async_runtime::block_on(db::init(app)).map_err(|e| {
-                eprintln!("Не удалось инициализировать базу данных: {e}");
+                log::error!("Не удалось инициализировать базу данных: {e}");
                 e
             })?;
             app.manage(Db(pool));

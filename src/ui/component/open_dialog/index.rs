@@ -197,7 +197,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
             selected_path.get_untracked(),
         );
         record_recent_file(path.clone(), recent_files_version);
-        leptos::logging::log!("Открываем файл: {path}");
+        leptos::logging::debug_warn!("Открываем файл: {path}");
         close();
     };
 

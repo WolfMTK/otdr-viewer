@@ -12,7 +12,7 @@ pub(crate) async fn init(app: &App) -> Result<SqlitePool, String> {
     std::fs::create_dir_all(&dir).map_err(|e| format!("Не удалось создать папку данных: {e}"))?;
 
     let db_path = dir.join("otdr-viewer.sqlite3");
-    eprintln!("SQLite: {}", db_path.display());
+    log::debug!("SQLite: {}", db_path.display());
 
     let options = SqliteConnectOptions::new().filename(&db_path).create_if_missing(true);
 
