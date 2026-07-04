@@ -20,3 +20,16 @@ pub fn toggle_class(base: &str, active: &str, condition: bool) -> String {
         base.to_string()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use crate::ui::component::helpers::toggle_class;
+
+    #[rstest]
+    #[case(true, "base active")]
+    #[case(false, "base")]
+    fn toggle_class_cases(#[case] condition: bool, #[case] expected: &str) {
+        assert_eq!(toggle_class("base", "active", condition), expected);
+    }
+}
