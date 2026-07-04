@@ -1,13 +1,13 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use shared_types::RecentFileEntry;
 use sqlx::FromRow;
 use tauri::State;
 
-use crate::commands::command_error;
 use crate::commands::sor::read_fiber_length_km;
+use crate::commands::{command_error, format_local_date, path_to_string};
 use crate::db::Db;
 
 const RECENT_FILES_LIMIT: i64 = 20;
@@ -22,10 +22,7 @@ struct RecentFileRow {
 
 impl From<RecentFileRow> for RecentFileEntry {
     fn from(row: RecentFileRow) -> Self {
-        let location = Path::new(&row.path)
-            .parent()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_default();
+        let location = Path::new(&row.path).parent().map(path_to_string).unwrap_or_default();
 
         Self {
             path: row.path,
@@ -45,10 +42,9 @@ fn now_unix() -> i64 {
 }
 
 fn format_timestamp(unix_seconds: i64) -> String {
-    let Some(utc) = DateTime::<Utc>::from_timestamp(unix_seconds, 0) else {
-        return String::new();
-    };
-    utc.with_timezone(&Local).format("%d.%m.%Y").to_string()
+    DateTime::<Utc>::from_timestamp(unix_seconds, 0)
+        .map(format_local_date)
+        .unwrap_or_default()
 }
 
 fn format_length_km(km: f64) -> String {

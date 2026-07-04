@@ -2,9 +2,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-use chrono::{DateTime, Local, Utc};
 use shared_types::{DirListing, FsEntry, QuickLocation};
 use tauri::{Manager, Window};
+
+use crate::commands::format_local_date;
 
 const KB: f64 = 1024.0;
 const MB: f64 = KB * KB;
@@ -20,15 +21,14 @@ fn format_size(bytes: u64) -> String {
     if bytes_f >= MB {
         format!("{:.1} МБ", bytes_f / MB)
     } else if bytes_f >= KB {
-        format!("{:.0} КБ", (bytes_f / KB).ceil().max(1.0))
+        format!("{:.0} КБ", (bytes_f / KB).ceil())
     } else {
         format!("{bytes} Б")
     }
 }
 
 fn format_modified(modified: std::io::Result<SystemTime>) -> Option<String> {
-    let utc: DateTime<Utc> = modified.ok()?.into();
-    Some(utc.with_timezone(&Local).format("%d.%m.%Y").to_string())
+    Some(format_local_date(modified.ok()?.into()))
 }
 
 fn is_sor_file(path: &Path) -> bool {
