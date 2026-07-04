@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::{wasm_bindgen, Closure};
+use wasm_bindgen::{JsCast, JsValue};
 
 #[wasm_bindgen]
 extern "C" {
@@ -10,6 +10,9 @@ extern "C" {
 
     #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "core"], js_name = invoke, catch)]
     async fn invoke_catch(cmd: &str, args: JsValue) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "event"], js_name = listen, catch)]
+    async fn listen_raw(event: &str, handler: &js_sys::Function) -> Result<JsValue, JsValue>;
 }
 
 pub fn invoke_fire_and_forget(cmd: &'static str) {
@@ -49,4 +52,31 @@ pub async fn try_invoke(cmd: &str) -> Result<(), String> {
 
 pub async fn invoke_parsed_with_args<A: Serialize, T: DeserializeOwned + Default>(cmd: &str, args: &A) -> T {
     try_invoke_parsed_with_args(cmd, args).await.unwrap_or_default()
+}
+
+pub fn listen_app_lifetime(event: &'static str, handler: impl FnMut(JsValue) + 'static) {
+    let closure = Closure::<dyn FnMut(JsValue)>::new(handler);
+    wasm_bindgen_futures::spawn_local(async move {
+        if let Err(e) = listen_raw(event, closure.as_ref().unchecked_ref()).await {
+            leptos::logging::error!("Не удалось подписаться на {event}: {e:?}");
+        }
+        closure.forget();
+    });
+}
+
+#[derive(serde::Deserialize)]
+struct EventEnvelope<T> {
+    payload: T,
+}
+
+pub fn listen_app_lifetime_parsed<T: DeserializeOwned + 'static>(
+    event: &'static str,
+    mut handler: impl FnMut(T) + 'static,
+) {
+    listen_app_lifetime(event, move |raw| {
+        match serde_wasm_bindgen::from_value::<EventEnvelope<T>>(raw) {
+            Ok(envelope) => handler(envelope.payload),
+            Err(e) => leptos::logging::error!("Событие {event}: не удалось разобрать payload: {e}"),
+        }
+    });
 }
