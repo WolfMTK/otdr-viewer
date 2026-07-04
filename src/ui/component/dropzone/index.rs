@@ -1,33 +1,50 @@
 use leptos::prelude::*;
+use serde::Deserialize;
 use stylance::import_style;
 
-use crate::ui::component::helpers::toggle_class;
+use crate::tauri::{listen_app_lifetime, listen_app_lifetime_parsed};
+use crate::ui::component::helpers::{has_sor_extension, record_recent_file, toggle_class};
 use crate::ui::component::open_dialog::index::OpenFileDialog;
 use crate::ui::component::sor_info::index::SorInfoDialog;
+use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
+#[derive(Deserialize)]
+struct DragDropPayload {
+    paths: Vec<String>,
+}
+
 #[component]
 pub fn Dropzone() -> impl IntoView {
+    let RecentFilesVersion(version) =
+        use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
     let dragover = RwSignal::new(false);
     let dialog_open = RwSignal::new(false);
     let info_open = RwSignal::new(false);
+    let drop_error = RwSignal::new(None::<String>);
+
+    listen_app_lifetime("tauri://drag-enter", move |_| dragover.set(true));
+    listen_app_lifetime("tauri://drag-leave", move |_| dragover.set(false));
+    listen_app_lifetime_parsed::<DragDropPayload>("tauri://drag-drop", move |payload| {
+        dragover.set(false);
+        match payload.paths.into_iter().find(|p| has_sor_extension(p)) {
+            Some(path) => {
+                drop_error.set(None);
+                wasm_bindgen_futures::spawn_local(async move {
+                    if let Err(e) = record_recent_file(path, version).await {
+                        drop_error.set(Some(e));
+                    }
+                });
+            }
+            None => drop_error.set(Some("Можно открыть только файлы .sor".to_string())),
+        }
+    });
 
     let card_class = move || toggle_class(style::card, style::card_dragover, dragover.get());
 
     view! {
-        <div
-            class=card_class
-            on:dragover=move |e| {
-                e.prevent_default();
-                dragover.set(true);
-            }
-            on:dragleave=move |_| dragover.set(false)
-            on:drop=move |e| {
-                e.prevent_default();
-                dragover.set(false);
-            }
-        >
+        <div class=card_class>
             <div class=style::upload_icon>
                 <img src="public/upload.svg" alt="upload" draggable="false" />
             </div>
@@ -36,6 +53,10 @@ pub fn Dropzone() -> impl IntoView {
             <div class=style::subtitle>
                 "Или выберите его через панель недавних файлов, либо нажмите кнопку ниже."
             </div>
+
+            <Show when=move || drop_error.get().is_some()>
+                <div class=style::drop_error>{move || drop_error.get().unwrap_or_default()}</div>
+            </Show>
 
             <button class=style::open_btn
                     on:click=move |_| dialog_open.set(true)>

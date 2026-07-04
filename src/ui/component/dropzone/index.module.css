@@ -107,3 +107,9 @@
 .help_link:hover {
     text-decoration: underline;
 }
+
+.drop_error {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #e5484d;
+}

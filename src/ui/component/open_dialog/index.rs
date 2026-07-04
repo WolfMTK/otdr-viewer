@@ -5,9 +5,9 @@ use serde::Serialize;
 use shared_types::{DirListing, FsEntry, QuickLocation};
 use stylance::import_style;
 
-use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed, try_invoke_with_args};
+use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed};
 use crate::ui::component::dialog_shell::index::DialogShell;
-use crate::ui::component::helpers::{filter_by_name, toggle_class, SearchBox};
+use crate::ui::component::helpers::{filter_by_name, has_sor_extension, record_recent_file, toggle_class, SearchBox};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
@@ -17,30 +17,12 @@ struct ListDirectoryArgs {
     path: Option<String>,
 }
 
-#[derive(Serialize)]
-struct RecordRecentFileArgs {
-    path: String,
-}
-
 async fn fetch_quick_locations() -> Vec<QuickLocation> {
     try_invoke_parsed("list_quick_locations").await.unwrap_or_default()
 }
 
 async fn fetch_directory(path: Option<String>) -> DirListing {
     invoke_parsed_with_args("list_directory", &ListDirectoryArgs { path }).await
-}
-
-fn record_recent_file(path: String, recent_files_version: RwSignal<u32>) {
-    wasm_bindgen_futures::spawn_local(async move {
-        match try_invoke_with_args("record_recent_file", &RecordRecentFileArgs { path }).await {
-            Ok(()) => recent_files_version.update(|v| *v += 1),
-            Err(e) => leptos::logging::error!("{e}"),
-        }
-    });
-}
-
-fn has_sor_extension(name: &str) -> bool {
-    name.to_lowercase().ends_with(".sor")
 }
 
 fn join_path(dir: &str, name: &str) -> String {
@@ -203,7 +185,12 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
             &filename.get_untracked(),
             selected_path.get_untracked(),
         );
-        record_recent_file(path.clone(), recent_files_version);
+        let path_for_record = path.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Err(e) = record_recent_file(path_for_record, recent_files_version).await {
+                leptos::logging::error!("{e}");
+            }
+        });
         leptos::logging::debug_warn!("Открываем файл: {path}");
         close();
     };
@@ -326,17 +313,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 mod tests {
     use rstest::rstest;
 
-    use crate::ui::component::open_dialog::index::{has_sor_extension, join_path, resolve_open_path};
-
-    #[rstest]
-    #[case("trace.sor", true)]
-    #[case("TRACE.SOR", true)]
-    #[case("trace.txt", false)]
-    #[case("sor", false)]
-    #[case("trace.sorx", false)]
-    fn has_sor_extension_cases(#[case] name: &str, #[case] expected: bool) {
-        assert_eq!(has_sor_extension(name), expected);
-    }
+    use crate::ui::component::open_dialog::index::{join_path, resolve_open_path};
 
     #[rstest]
     #[case("/home/user", "a.sor", "/home/user/a.sor")]
