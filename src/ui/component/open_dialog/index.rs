@@ -340,8 +340,9 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 
 #[cfg(test)]
 mod tests {
-    use crate::ui::component::open_dialog::index::{has_sor_extension, join_path, resolve_open_path};
     use rstest::rstest;
+
+    use crate::ui::component::open_dialog::index::{has_sor_extension, join_path, resolve_open_path};
 
     #[rstest]
     #[case("trace.sor", true)]

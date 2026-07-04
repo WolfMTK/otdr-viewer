@@ -113,10 +113,13 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
 
 #[tauri::command]
 pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), String> {
-    sqlx::query("DELETE FROM recent_files").execute(&db.0).await.map_err(|e| {
-        log::error!("clear_recent_files: не удалось очистить список: {e}");
-        format!("Не удалось очистить список недавних файлов: {e}")
-    })?;
+    sqlx::query("DELETE FROM recent_files")
+        .execute(&db.0)
+        .await
+        .map_err(|e| {
+            log::error!("clear_recent_files: не удалось очистить список: {e}");
+            format!("Не удалось очистить список недавних файлов: {e}")
+        })?;
 
     Ok(())
 }
@@ -124,6 +127,7 @@ pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+
     use crate::commands::recent_files::{format_length_km, format_timestamp};
 
     #[rstest]

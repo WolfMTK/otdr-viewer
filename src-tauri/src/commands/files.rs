@@ -124,8 +124,10 @@ pub(crate) fn list_quick_locations(window: Window) -> Vec<QuickLocation> {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+
     use rstest::rstest;
     use shared_types::FsEntry;
+
     use crate::commands::files::{format_size, is_sor_file, sort_entries};
 
     #[rstest]

@@ -24,6 +24,7 @@ pub fn toggle_class(base: &str, active: &str, condition: bool) -> String {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+
     use crate::ui::component::helpers::toggle_class;
 
     #[rstest]
