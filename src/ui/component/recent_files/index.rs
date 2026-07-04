@@ -11,10 +11,6 @@ use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
-async fn fetch_recent_files() -> Result<Vec<RecentFileEntry>, String> {
-    try_invoke_parsed("list_recent_files").await
-}
-
 fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
     let entry_path = entry.path.clone();
     let click_path = entry.path.clone();
@@ -62,7 +58,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
 
     let files_res = LocalResource::new(move || {
         version.get();
-        fetch_recent_files()
+        try_invoke_parsed::<Vec<RecentFileEntry>>("list_recent_files")
     });
 
     let load_error = Memo::new(move |_| files_res.get().and_then(|r| r.as_ref().err().cloned()));
