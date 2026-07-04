@@ -118,3 +118,32 @@ pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), ()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use crate::commands::recent_files::{format_length_km, format_timestamp};
+
+    #[rstest]
+    fn format_timestamp_produces_dotted_date() {
+        let s = format_timestamp(1_700_000_000);
+        let parts: Vec<&str> = s.split('.').collect();
+        assert_eq!(parts.len(), 3);
+        assert_eq!(parts[0].len(), 2);
+        assert_eq!(parts[1].len(), 2);
+        assert_eq!(parts[2].len(), 4);
+    }
+
+    #[rstest]
+    fn format_timestamp_invalid_gives_empty_string() {
+        assert_eq!(format_timestamp(i64::MAX), "");
+    }
+
+    #[rstest]
+    #[case(0.0, "0.0 км")]
+    #[case(12.34, "12.3 км")]
+    #[case(12.36, "12.4 км")]
+    fn format_length_km_cases(#[case] km: f64, #[case] expected: &str) {
+        assert_eq!(format_length_km(km), expected);
+    }
+}
