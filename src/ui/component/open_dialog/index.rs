@@ -335,3 +335,42 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
         </Show>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use crate::ui::component::open_dialog::index::{has_sor_extension, join_path, resolve_open_path};
+
+    #[rstest]
+    #[case("trace.sor", true)]
+    #[case("TRACE.SOR", true)]
+    #[case("trace.txt", false)]
+    #[case("sor", false)]
+    #[case("trace.sorx", false)]
+    fn has_sor_extension_cases(#[case] name: &str, #[case] expected: bool) {
+        assert_eq!(has_sor_extension(name), expected);
+    }
+
+    #[rstest]
+    #[case("/home/user", "a.sor", "/home/user/a.sor")]
+    #[case("/home/user/", "a.sor", "/home/user/a.sor")]
+    #[case(r"C:\Users\admin", "a.sor", r"C:\Users\admin\a.sor")]
+    #[case(r"C:\Users\admin\", "a.sor", r"C:\Users\admin\a.sor")]
+    fn join_path_cases(#[case] dir: &str, #[case] name: &str, #[case] expected: &str) {
+        assert_eq!(join_path(dir, name), expected);
+    }
+
+    #[rstest]
+    #[case("/current", "a.sor", Some("/data/traces/a.sor"), "/data/traces/a.sor")]
+    #[case("/current", "b.sor", Some("/data/traces/a.sor"), "/current/b.sor")]
+    #[case("/current", "b.sor", None, "/current/b.sor")]
+    fn resolve_open_path_cases(
+        #[case] current: &str,
+        #[case] filename: &str,
+        #[case] selected: Option<&str>,
+        #[case] expected: &str,
+    ) {
+        let selected = selected.map(str::to_string);
+        assert_eq!(resolve_open_path(current, filename, selected), expected);
+    }
+}
