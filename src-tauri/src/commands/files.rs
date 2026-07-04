@@ -40,44 +40,37 @@ fn is_sor_file(path: &Path) -> bool {
 fn read_entries(dir: &Path) -> Result<Vec<FsEntry>, String> {
     let read_dir = fs::read_dir(dir).map_err(|e| format!("Не удалось прочитать папку: {e}"))?;
 
-    let mut dirs = Vec::new();
-    let mut files = Vec::new();
+    let mut entries: Vec<FsEntry> = read_dir.flatten().filter_map(|entry| to_fs_entry(&entry)).collect();
 
-    for entry in read_dir.flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
+    sort_entries(&mut entries);
+    Ok(entries)
+}
 
-        if name.starts_with('.') {
-            continue;
-        }
-
-        let Ok(metadata) = entry.metadata() else { continue };
-        let modified_label = format_modified(metadata.modified());
-
-        if metadata.is_dir() {
-            dirs.push(FsEntry {
-                name,
-                path: path_to_string(&path),
-                is_dir: true,
-                size_label: None,
-                modified_label,
-            });
-        } else if is_sor_file(&path) {
-            files.push(FsEntry {
-                name,
-                path: path_to_string(&path),
-                is_dir: false,
-                size_label: Some(format_size(metadata.len())),
-                modified_label,
-            });
-        }
+fn to_fs_entry(entry: &fs::DirEntry) -> Option<FsEntry> {
+    let name = entry.file_name().to_string_lossy().to_string();
+    if name.starts_with(".") {
+        return None;
     }
 
-    dirs.sort_by_key(|e| e.name.to_lowercase());
-    files.sort_by_key(|e| e.name.to_lowercase());
-    dirs.extend(files);
+    let path = entry.path();
+    let metadata = entry.metadata().ok()?;
+    let is_dir = metadata.is_dir();
 
-    Ok(dirs)
+    if !is_dir && !is_sor_file(&path) {
+        return None;
+    }
+
+    Some(FsEntry {
+        name,
+        path: path_to_string(&path),
+        is_dir,
+        size_label: (!is_dir).then(|| format_size(metadata.len())),
+        modified_label: format_modified(metadata.modified()),
+    })
+}
+
+fn sort_entries(entries: &mut [FsEntry]) {
+    entries.sort_by_key(|e| (!e.is_dir, e.name.to_lowercase()));
 }
 
 #[tauri::command]
