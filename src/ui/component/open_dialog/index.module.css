@@ -381,7 +381,7 @@
     align-items: center;
     gap: 6px;
     border: none;
-    background: #3b6ef5;
+    background: #1f1f1f;
     color: #ffffff;
     border-radius: 7px;
     padding: 8px 16px;
@@ -393,16 +393,16 @@
 }
 
 .open_btn:hover {
-    background: #2f5ad9;
+    background: #333333;
 }
 
 .open_btn:disabled {
-    background: #b9c9f7;
+    background: #687278;
     cursor: default;
 }
 
 .open_btn:disabled:hover {
-    background: #b9c9f7;
+    background: #687278;
 }
 
 .open_btn img {
