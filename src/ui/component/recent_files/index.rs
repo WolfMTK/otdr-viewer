@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use send_wrapper::SendWrapper;
 use shared_types::RecentFileEntry;
 use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
@@ -54,24 +55,25 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
     let RecentFilesVersion(version) =
         use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
 
-    let files = RwSignal::new(Vec::<RecentFileEntry>::new());
+    let clear_error = RwSignal::new(None::<String>);
     let selected_path = RwSignal::new(None::<String>);
     let query = RwSignal::new(String::new());
     let width = RwSignal::new(MIN_WIDTH);
     let dragging = RwSignal::new(false);
-    let load_error = RwSignal::new(None::<String>);
 
-    Effect::new(move |_| {
+    let files_res = LocalResource::new(move || {
         version.get();
-        wasm_bindgen_futures::spawn_local(async move {
-            match fetch_recent_files().await {
-                Ok(list) => {
-                    files.set(list);
-                    load_error.set(None);
-                }
-                Err(e) => load_error.set(Some(e)),
-            }
-        });
+        fetch_recent_files()
+    });
+
+    let load_error = Memo::new(move |_| files_res.get().and_then(|r| r.as_ref().err().cloned()));
+    let shown_error = Memo::new(move |_| clear_error.get().or_else(|| load_error.get()));
+
+    let is_empty = Memo::new(move |_| {
+        files_res
+            .get()
+            .map(|r| r.as_ref().map(|v| v.is_empty()).unwrap_or(false))
+            .unwrap_or(false)
     });
 
     if let Some(win) = web_sys::window() {
@@ -88,22 +90,30 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                 width.set(w);
             }
         });
-        let _ = win.add_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
-        on_move.forget();
 
         let on_up = Closure::<dyn FnMut()>::new(move || {
             if dragging.get_untracked() {
                 dragging.set(false);
             }
         });
+
+        let _ = win.add_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
         let _ = win.add_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
-        on_up.forget();
+
+        let cleanup = SendWrapper::new((win, on_move, on_up));
+        on_cleanup(move || {
+            let (win, on_move, on_up) = cleanup.take();
+            let _ = win.remove_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref());
+            let _ = win.remove_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref());
+        });
     }
 
     let filtered = Memo::new(move |_| {
         let q = query.get().to_lowercase();
-        files
+        files_res
             .get()
+            .and_then(|r| r.as_ref().ok().cloned())
+            .unwrap_or_default()
             .into_iter()
             .filter(|f| q.is_empty() || f.name.to_lowercase().contains(&q))
             .collect::<Vec<_>>()
@@ -127,14 +137,18 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                 </div>
 
                 <div class=style::list>
-                    <Show when=move || load_error.get().is_some()>
-                        <div class=style::error>{move || load_error.get().unwrap_or_default()}</div>
+                    <Show when=move || shown_error.get().is_some()>
+                        <div class=style::error>{move || shown_error.get().unwrap_or_default()}</div>
                     </Show>
 
                     <Show when=move || load_error.get().is_none()>
-                        {move || filtered.get().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
+                        <For
+                            each=move || filtered.get()
+                            key=|f| f.path.clone()
+                            children=move |f| render_entry(f, selected_path)
+                        />
 
-                        <Show when=move || files.get().is_empty()>
+                        <Show when=move || is_empty.get()>
                             <div class=style::empty>"Пока нет открытых файлов"</div>
                         </Show>
                     </Show>
@@ -147,8 +161,11 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                             selected_path.set(None);
                             wasm_bindgen_futures::spawn_local(async move {
                                 match try_invoke("clear_recent_files").await {
-                                    Ok(()) => version.update(|v| *v += 1),
-                                    Err(e) => load_error.set(Some(e)),
+                                    Ok(()) => {
+                                        clear_error.set(None);
+                                        version.update(|v| *v += 1);
+                                    }
+                                    Err(e) => clear_error.set(Some(e)),
                                 }
                             });
                         }
