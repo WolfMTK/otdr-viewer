@@ -62,12 +62,12 @@ pub(crate) fn read_fiber_length_km(path: &str) -> Option<f64> {
 }
 
 #[tauri::command]
-pub(crate) fn parse_sor_file(path: String) -> SorSummary {
+pub(crate) fn parse_sor_file(path: String) -> Result<SorSummary, String> {
     match SorFile::from_file(&path, false) {
-        Ok(sor) => summarize(sor),
-        Err(e) => SorSummary {
-            error: Some(e.to_string()),
-            ..Default::default()
-        },
+        Ok(sor) => Ok(summarize(sor)),
+        Err(e) => {
+            log::error!("parse_sor_file: не удалось разобрать {path}: {e}");
+            Err(format!("Не удалось прочитать .sor-файл: {e}"))
+        }
     }
 }

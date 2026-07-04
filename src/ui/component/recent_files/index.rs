@@ -4,15 +4,15 @@ use stylance::import_style;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 
-use crate::tauri::{invoke_and_wait, invoke_parsed};
+use crate::tauri::{try_invoke, try_invoke_parsed};
 use crate::ui::component::helpers::toggle_class;
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, PANEL_MAX_WINDOW_FRACTION, SIDEBAR_WIDTH};
 use crate::ui::context::RecentFilesVersion;
 
 import_style!(style, "index.module.css");
 
-async fn fetch_recent_files() -> Vec<RecentFileEntry> {
-    invoke_parsed("list_recent_files").await
+async fn fetch_recent_files() -> Result<Vec<RecentFileEntry>, String> {
+    try_invoke_parsed("list_recent_files").await
 }
 
 fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
@@ -59,11 +59,18 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
     let query = RwSignal::new(String::new());
     let width = RwSignal::new(MIN_WIDTH);
     let dragging = RwSignal::new(false);
+    let load_error = RwSignal::new(None::<String>);
 
     Effect::new(move |_| {
         version.get();
         wasm_bindgen_futures::spawn_local(async move {
-            files.set(fetch_recent_files().await);
+            match fetch_recent_files().await {
+                Ok(list) => {
+                    files.set(list);
+                    load_error.set(None);
+                }
+                Err(e) => load_error.set(Some(e)),
+            }
         });
     });
 
@@ -120,10 +127,16 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                 </div>
 
                 <div class=style::list>
-                    {move || filtered.get().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
+                    <Show when=move || load_error.get().is_some()>
+                        <div class=style::error>{move || load_error.get().unwrap_or_default()}</div>
+                    </Show>
 
-                    <Show when=move || files.get().is_empty()>
-                        <div class=style::empty>"Пока нет открытых файлов"</div>
+                    <Show when=move || load_error.get().is_none()>
+                        {move || filtered.get().into_iter().map(|f| render_entry(f, selected_path)).collect_view()}
+
+                        <Show when=move || files.get().is_empty()>
+                            <div class=style::empty>"Пока нет открытых файлов"</div>
+                        </Show>
                     </Show>
                 </div>
 
@@ -133,8 +146,10 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                         on:click=move |_| {
                             selected_path.set(None);
                             wasm_bindgen_futures::spawn_local(async move {
-                                invoke_and_wait("clear_recent_files").await;
-                                version.update(|v| *v += 1);
+                                match try_invoke("clear_recent_files").await {
+                                    Ok(()) => version.update(|v| *v += 1),
+                                    Err(e) => load_error.set(Some(e)),
+                                }
                             });
                         }
                     >

@@ -5,7 +5,7 @@ use serde::Serialize;
 use shared_types::{DirListing, FsEntry, QuickLocation};
 use stylance::import_style;
 
-use crate::tauri::{invoke_parsed, invoke_parsed_with_args, invoke_with_args};
+use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed, try_invoke_with_args};
 use crate::ui::component::helpers::{close_on_escape, toggle_class};
 use crate::ui::context::RecentFilesVersion;
 
@@ -22,7 +22,7 @@ struct RecordRecentFileArgs {
 }
 
 async fn fetch_quick_locations() -> Vec<QuickLocation> {
-    invoke_parsed("list_quick_locations").await
+    try_invoke_parsed("list_quick_locations").await.unwrap_or_default()
 }
 
 async fn fetch_directory(path: Option<String>) -> DirListing {
@@ -31,8 +31,10 @@ async fn fetch_directory(path: Option<String>) -> DirListing {
 
 fn record_recent_file(path: String, recent_files_version: RwSignal<u32>) {
     wasm_bindgen_futures::spawn_local(async move {
-        invoke_with_args("record_recent_file", &RecordRecentFileArgs { path }).await;
-        recent_files_version.update(|v| *v += 1);
+        match try_invoke_with_args("record_recent_file", &RecordRecentFileArgs { path }).await {
+            Ok(()) => recent_files_version.update(|v| *v += 1),
+            Err(e) => leptos::logging::error!("{e}"),
+        }
     });
 }
 
@@ -338,8 +340,8 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
     use crate::ui::component::open_dialog::index::{has_sor_extension, join_path, resolve_open_path};
+    use rstest::rstest;
 
     #[rstest]
     #[case("trace.sor", true)]

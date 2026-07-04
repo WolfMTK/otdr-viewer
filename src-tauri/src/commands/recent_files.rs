@@ -55,7 +55,7 @@ fn format_length_km(km: f64) -> String {
 }
 
 #[tauri::command]
-pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Result<(), ()> {
+pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Result<(), String> {
     let name = Path::new(&path)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -80,15 +80,16 @@ pub(crate) async fn record_recent_file(db: State<'_, Db>, path: String) -> Resul
     .execute(&db.0)
     .await;
 
-    if let Err(e) = result {
+    result.map_err(|e| {
         log::error!("record_recent_file: не удалось сохранить запись: {e}");
-    }
+        format!("Не удалось сохранить файл в списке недавних: {e}")
+    })?;
 
     Ok(())
 }
 
 #[tauri::command]
-pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFileEntry>, ()> {
+pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFileEntry>, String> {
     let rows = sqlx::query_as::<_, RecentFileRow>(
         r#"
             SELECT path, name, opened_at, length_km
@@ -105,16 +106,17 @@ pub(crate) async fn list_recent_files(db: State<'_, Db>) -> Result<Vec<RecentFil
         Ok(rows) => Ok(rows.into_iter().map(RecentFileEntry::from).collect()),
         Err(e) => {
             log::error!("list_recent_files: не удалось получить список: {e}");
-            Ok(Vec::new())
+            Err(format!("Не удалось загрузить список недавних файлов: {e}"))
         }
     }
 }
 
 #[tauri::command]
-pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), ()> {
-    if let Err(e) = sqlx::query("DELETE FROM recent_files").execute(&db.0).await {
+pub(crate) async fn clear_recent_files(db: State<'_, Db>) -> Result<(), String> {
+    sqlx::query("DELETE FROM recent_files").execute(&db.0).await.map_err(|e| {
         log::error!("clear_recent_files: не удалось очистить список: {e}");
-    }
+        format!("Не удалось очистить список недавних файлов: {e}")
+    })?;
 
     Ok(())
 }
