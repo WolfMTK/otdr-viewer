@@ -1,4 +1,5 @@
-use leptos::prelude::{GetUntracked, RwSignal, Set};
+use leptos::__reexports::send_wrapper::SendWrapper;
+use leptos::prelude::{on_cleanup, GetUntracked, RwSignal, Set};
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 
@@ -10,7 +11,12 @@ pub fn close_on_escape(open: RwSignal<bool>) {
         }
     });
     let _ = win.add_event_listener_with_callback("keydown", handler.as_ref().unchecked_ref());
-    handler.forget();
+
+    let cleanup = SendWrapper::new((win, handler));
+    on_cleanup(move || {
+        let (win, handler) = cleanup.take();
+        let _ = win.remove_event_listener_with_callback("keydown", handler.as_ref().unchecked_ref());
+    });
 }
 
 pub fn toggle_class(base: &str, active: &str, condition: bool) -> String {
