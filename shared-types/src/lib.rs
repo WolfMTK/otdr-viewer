@@ -60,3 +60,15 @@ pub struct SorSummary {
     pub events: Vec<SorEvent>,
     pub error: Option<String>,
 }
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct SorTrace {
+    pub distances_km: Vec<f64>,
+    pub levels_db: Vec<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SorData {
+    pub summary: SorSummary,
+    pub trace: SorTrace,
+}
