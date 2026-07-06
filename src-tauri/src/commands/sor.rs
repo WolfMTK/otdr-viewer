@@ -123,6 +123,7 @@ pub(crate) fn parse_sor_file(path: String) -> Result<SorData, String> {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+
     use crate::commands::sor::{downsample_min_max, TRACE_BUCKETS};
 
     fn ramp(num: usize) -> (Vec<f64>, Vec<f64>) {
