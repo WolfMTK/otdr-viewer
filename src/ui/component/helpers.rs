@@ -1,9 +1,28 @@
+use crate::tauri::{try_invoke_parsed_with_args, try_invoke_with_args};
 use leptos::ev;
 use leptos::prelude::*;
 use leptos_use::{use_event_listener, use_window};
 use serde::Serialize;
+use shared_types::SorData;
 
-use crate::tauri::try_invoke_with_args;
+#[derive(Serialize)]
+struct ParseSorArgs {
+    path: String,
+}
+
+pub async fn open_sor_file(
+    path: String,
+    opened: RwSignal<Option<SorData>>,
+    recent_files_version: RwSignal<u32>,
+) -> Result<(), String> {
+    let data: SorData = try_invoke_parsed_with_args("parse_sor_file", &ParseSorArgs { path: path.clone() }).await?;
+    opened.set(Some(data));
+    if let Err(e) = record_recent_file(path, recent_files_version).await {
+        leptos::logging::error!("{e}");
+    }
+
+    Ok(())
+}
 
 pub fn close_on_escape(open: RwSignal<bool>) {
     let _ = use_event_listener(use_window(), ev::keydown, move |event| {
