@@ -193,7 +193,7 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
                 return;
             }
             open.set(false);
-        })
+        });
     };
 
     let select_entry = move |entry: &FsEntry| {
