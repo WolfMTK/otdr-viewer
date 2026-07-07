@@ -3,10 +3,10 @@ use serde::Deserialize;
 use stylance::import_style;
 
 use crate::tauri::{listen_app_lifetime, listen_app_lifetime_parsed};
-use crate::ui::component::helpers::{has_sor_extension, record_recent_file, toggle_class};
+use crate::ui::component::helpers::{has_sor_extension, open_sor_file, toggle_class};
 use crate::ui::component::open_dialog::index::OpenFileDialog;
 use crate::ui::component::sor_info::index::SorInfoDialog;
-use crate::ui::context::RecentFilesVersion;
+use crate::ui::context::{OpenedSor, RecentFilesVersion};
 
 import_style!(style, "index.module.css");
 
@@ -19,6 +19,8 @@ struct DragDropPayload {
 pub fn Dropzone() -> impl IntoView {
     let RecentFilesVersion(version) =
         use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
+    let OpenedSor(opened) = use_context::<OpenedSor>().expect("OpenedSor is provided at app root");
+
     let dragover = RwSignal::new(false);
     let dialog_open = RwSignal::new(false);
     let info_open = RwSignal::new(false);
@@ -32,7 +34,7 @@ pub fn Dropzone() -> impl IntoView {
             Some(path) => {
                 drop_error.set(None);
                 wasm_bindgen_futures::spawn_local(async move {
-                    if let Err(e) = record_recent_file(path, version).await {
+                    if let Err(e) = open_sor_file(path, opened, version).await {
                         drop_error.set(Some(e));
                     }
                 });
