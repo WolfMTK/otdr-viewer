@@ -5,13 +5,19 @@ use shared_types::RecentFileEntry;
 use stylance::import_style;
 
 use crate::tauri::{try_invoke, try_invoke_parsed};
-use crate::ui::component::helpers::{filter_by_name, toggle_class, SearchBox};
+use crate::ui::component::helpers::{filter_by_name, open_sor_file, toggle_class, SearchBox};
 use crate::ui::component::recent_files::constants::{MAX_WIDTH, MIN_WIDTH, PANEL_MAX_WINDOW_FRACTION, SIDEBAR_WIDTH};
-use crate::ui::context::RecentFilesVersion;
+use crate::ui::context::{OpenedSor, RecentFilesVersion};
 
 import_style!(style, "index.module.css");
 
-fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>) -> impl IntoView {
+fn render_entry(
+    entry: RecentFileEntry,
+    selected_path: RwSignal<Option<String>>,
+    opened: RwSignal<Option<shared_types::SorData>>,
+    version: RwSignal<u32>,
+    open_error: RwSignal<Option<String>>,
+) -> impl IntoView {
     let entry_path = entry.path.clone();
     let click_path = entry.path.clone();
     let has_length = entry.length_label.is_some();
@@ -28,7 +34,15 @@ fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>)
         <div
             class=item_class
             title=entry.path
-            on:click=move |_| selected_path.set(Some(click_path.clone()))
+            on:click=move |_| {
+                selected_path.set(Some(click_path.clone()));
+                let path = click_path.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    if let Err(e) = open_sor_file(path, opened, version).await {
+                        open_error.set(Some(e));
+                    }
+                });
+            }
         >
             <img src="public/file.svg" class=style::file_icon alt="file" draggable="false" />
             <div class=style::file_info>
@@ -49,6 +63,8 @@ fn render_entry(entry: RecentFileEntry, selected_path: RwSignal<Option<String>>)
 pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
     let RecentFilesVersion(version) =
         use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
+    let OpenedSor(opened) = use_context::<OpenedSor>().expect("OpenedSor is provided at app root");
+    let open_error = RwSignal::new(None::<String>);
 
     let clear_error = RwSignal::new(None::<String>);
     let selected_path = RwSignal::new(None::<String>);
@@ -119,7 +135,7 @@ pub fn RecentFiles(panel_open: RwSignal<bool>) -> impl IntoView {
                         <For
                             each=move || filtered.get()
                             key=|f| f.path.clone()
-                            children=move |f| render_entry(f, selected_path)
+                            children=move |f| render_entry(f, selected_path, opened, version, open_error)
                         />
 
                         <Show when=move || is_empty.get()>
