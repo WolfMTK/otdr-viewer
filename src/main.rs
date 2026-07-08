@@ -13,7 +13,7 @@ use crate::ui::component::recent_files::index::RecentFiles;
 use crate::ui::component::sidebar::index::Sidebar;
 use crate::ui::component::status_bar::index::StatusBar;
 use crate::ui::component::title_bar::index::TitleBar;
-use crate::ui::context::provide_recent_files_version;
+use crate::ui::context::provide_app_context;
 use crate::ui::page::home::Home;
 
 import_style!(style, "main.module.css");
@@ -62,7 +62,7 @@ fn main() {
     let panel_open = RwSignal::new(true);
 
     mount_to_body(move || {
-        provide_recent_files_version();
+        provide_app_context();
         view! {
             <div style:display=move || if is_maximized.get() { "none" } else { "contents" }>
                 {RESIZE_HANDLES
