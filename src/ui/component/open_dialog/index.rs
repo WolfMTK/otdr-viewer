@@ -7,8 +7,8 @@ use stylance::import_style;
 
 use crate::tauri::{invoke_parsed_with_args, try_invoke_parsed};
 use crate::ui::component::dialog_shell::index::DialogShell;
-use crate::ui::component::helpers::{filter_by_name, has_sor_extension, record_recent_file, toggle_class, SearchBox};
-use crate::ui::context::RecentFilesVersion;
+use crate::ui::component::helpers::{filter_by_name, has_sor_extension, open_sor_file, toggle_class, SearchBox};
+use crate::ui::context::{OpenedSor, RecentFilesVersion};
 
 import_style!(style, "index.module.css");
 
@@ -103,6 +103,8 @@ fn render_entry_row(
 pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
     let RecentFilesVersion(recent_files_version) =
         use_context::<RecentFilesVersion>().expect("RecentFilesVersion is provided at app root");
+    let OpenedSor(opened) = use_context::<OpenedSor>().expect("OpenedSor is provided at app root");
+
     let quick_locations = RwSignal::new(Vec::<QuickLocation>::new());
     let active_location = RwSignal::new(0usize);
     let request_id = StoredValue::new(0u64);
@@ -185,14 +187,13 @@ pub fn OpenFileDialog(open: RwSignal<bool>) -> impl IntoView {
             &filename.get_untracked(),
             selected_path.get_untracked(),
         );
-        let path_for_record = path.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            if let Err(e) = record_recent_file(path_for_record, recent_files_version).await {
-                leptos::logging::error!("{e}");
+            if let Err(e) = open_sor_file(path, opened, recent_files_version).await {
+                dir_error.set(Some(e));
+                return;
             }
+            open.set(false);
         });
-        leptos::logging::debug_warn!("Открываем файл: {path}");
-        close();
     };
 
     let select_entry = move |entry: &FsEntry| {
