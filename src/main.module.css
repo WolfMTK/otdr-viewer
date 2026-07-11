@@ -102,3 +102,18 @@ body {
     background: #eef1f4;
     overflow: auto;
 }
+
+.main_column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.body_row {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
