@@ -7,3 +7,4 @@ pub mod sidebar;
 pub mod sor_info;
 pub mod status_bar;
 pub mod title_bar;
+pub mod toolbar;
