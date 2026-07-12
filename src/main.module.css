@@ -12,69 +12,14 @@ body {
     background: transparent;
 }
 
-.resize_handle[data-resize-dir="n"] {
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    cursor: ns-resize;
-}
-
-.resize_handle[data-resize-dir="s"] {
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    cursor: ns-resize;
-}
-
-.resize_handle[data-resize-dir="w"] {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 5px;
-    cursor: ew-resize;
-}
-
-.resize_handle[data-resize-dir="e"] {
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 5px;
-    cursor: ew-resize;
-}
-
-.resize_handle[data-resize-dir="nw"] {
-    top: 0;
-    left: 0;
-    width: 10px;
-    height: 10px;
-    cursor: nwse-resize;
-}
-
-.resize_handle[data-resize-dir="ne"] {
-    top: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
-    cursor: nesw-resize;
-}
-
-.resize_handle[data-resize-dir="sw"] {
-    bottom: 0;
-    left: 0;
-    width: 10px;
-    height: 10px;
-    cursor: nesw-resize;
-}
-
-.resize_handle[data-resize-dir="se"] {
-    bottom: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
-    cursor: nwse-resize;
-}
+.resize_handle[data-resize-dir="n"] { top: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+.resize_handle[data-resize-dir="s"] { bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+.resize_handle[data-resize-dir="w"] { top: 0; bottom: 0; left: 0; width: 5px; cursor: ew-resize; }
+.resize_handle[data-resize-dir="e"] { top: 0; bottom: 0; right: 0; width: 5px; cursor: ew-resize; }
+.resize_handle[data-resize-dir="nw"] { top: 0; left: 0; width: 10px; height: 10px; cursor: nwse-resize; }
+.resize_handle[data-resize-dir="ne"] { top: 0; right: 0; width: 10px; height: 10px; cursor: nesw-resize; }
+.resize_handle[data-resize-dir="sw"] { bottom: 0; left: 0; width: 10px; height: 10px; cursor: nesw-resize; }
+.resize_handle[data-resize-dir="se"] { bottom: 0; right: 0; width: 10px; height: 10px; cursor: nwse-resize; }
 
 .screen {
     display: flex;
@@ -91,6 +36,21 @@ body {
     overflow: hidden;
 }
 
+.main_column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.body_row {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .content {
     flex: 1;
     min-width: 0;
@@ -101,4 +61,11 @@ body {
     box-sizing: border-box;
     background: #eef1f4;
     overflow: auto;
+}
+
+.content_flush {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    background: #ffffff;
 }

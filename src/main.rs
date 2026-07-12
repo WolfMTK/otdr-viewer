@@ -13,7 +13,8 @@ use crate::ui::component::recent_files::index::RecentFiles;
 use crate::ui::component::sidebar::index::Sidebar;
 use crate::ui::component::status_bar::index::StatusBar;
 use crate::ui::component::title_bar::index::TitleBar;
-use crate::ui::context::provide_app_context;
+use crate::ui::component::toolbar::index::Toolbar;
+use crate::ui::context::{provide_app_context, OpenedSor};
 use crate::ui::page::home::Home;
 
 import_style!(style, "main.module.css");
@@ -63,6 +64,8 @@ fn main() {
 
     mount_to_body(move || {
         provide_app_context();
+        let OpenedSor(opened) = use_context::<OpenedSor>().expect("OpenedSor is provided at app root");
+
         view! {
             <div style:display=move || if is_maximized.get() { "none" } else { "contents" }>
                 {RESIZE_HANDLES
@@ -84,10 +87,25 @@ fn main() {
             <div class=style::screen>
                 <div class=style::layout>
                     <Sidebar panel_open=panel_open/>
-                    <RecentFiles panel_open=panel_open/>
-                    <main class=style::content>
-                        <Home/>
-                    </main>
+
+                    <div class=style::main_column>
+                        <Show when=move || opened.get().is_some()>
+                            <Toolbar/>
+                        </Show>
+
+                        <div class=style::body_row>
+                            <RecentFiles panel_open=panel_open/>
+                            <main class=move || {
+                                if opened.get().is_some() {
+                                    stylance::classes!(style::content, style::content_flush)
+                                } else {
+                                    style::content.to_string()
+                                }
+                            }>
+                                <Home/>
+                            </main>
+                        </div>
+                    </div>
                 </div>
                 <StatusBar/>
             </div>

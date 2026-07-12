@@ -1,9 +1,13 @@
+pub mod chart;
 pub mod dialog_shell;
 pub mod dropzone;
+pub mod events_table;
 mod helpers;
 pub mod open_dialog;
+pub mod params_panel;
 pub mod recent_files;
 pub mod sidebar;
 pub mod sor_info;
 pub mod status_bar;
 pub mod title_bar;
+pub mod toolbar;
