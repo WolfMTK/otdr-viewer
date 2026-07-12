@@ -95,7 +95,13 @@ fn main() {
 
                         <div class=style::body_row>
                             <RecentFiles panel_open=panel_open/>
-                            <main class=style::content>
+                            <main class=move || {
+                                if opened.get().is_some() {
+                                    stylance::classes!(style::content, style::content_flush)
+                                } else {
+                                    style::content.to_string()
+                                }
+                            }>
                                 <Home/>
                             </main>
                         </div>
