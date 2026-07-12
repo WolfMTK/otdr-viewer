@@ -16,14 +16,15 @@ pub fn Toolbar() -> impl IntoView {
     let wavelength_nm = RwSignal::new(1550u16);
 
     let toggle_btn_class = move |on: bool| toggle_class(style::icon_button, style::icon_button_active, on);
-    let wave_btn_class = move |nm: u16| toggle_class(style::wave_button, style::wave_button_active, wavelength_nm.get() == nm);
+    let wave_btn_class =
+        move |nm: u16| toggle_class(style::wave_button, style::wave_button_active, wavelength_nm.get() == nm);
 
     view! {
         <div class=style::toolbar>
             <div class=style::group>
                 <button class=style::icon_button title="Весь масштаб">
                     <img src="public/toolbar-fit-view.svg" alt="fit view" draggable="false" />
-                </button>
+        </button>
                 <button class=style::icon_button title="Увеличение">
                     <img src="public/toolbar-zoom-in.svg" alt="zoom in" draggable="false" />
                 </button>

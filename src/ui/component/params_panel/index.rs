@@ -21,7 +21,9 @@ fn opt_f64(v: Option<f64>, suffix: &str, precision: usize) -> String {
 }
 
 fn opt_str(v: &Option<String>) -> String {
-    v.clone().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "—".to_string())
+    v.clone()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "—".to_string())
 }
 
 #[component]

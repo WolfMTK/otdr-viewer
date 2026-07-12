@@ -13,12 +13,15 @@ const PAD_RIGHT: f64 = 12.0;
 const PAD_TOP: f64 = 22.0;
 const PAD_BOTTOM: f64 = 26.0;
 
-fn build_path(distances_km: &[f64], levels_db: &[f64], map_x: impl Fn(f64) -> f64, map_y: impl Fn(f64) -> f64) -> String {
-    distances_km
-        .iter()
-        .zip(levels_db)
-        .enumerate()
-        .fold(String::with_capacity(distances_km.len() * 14), |mut path, (i, (&d, &v))| {
+fn build_path(
+    distances_km: &[f64],
+    levels_db: &[f64],
+    map_x: impl Fn(f64) -> f64,
+    map_y: impl Fn(f64) -> f64,
+) -> String {
+    distances_km.iter().zip(levels_db).enumerate().fold(
+        String::with_capacity(distances_km.len() * 14),
+        |mut path, (i, (&d, &v))| {
             let (x, y) = (map_x(d), map_y(v));
             if i == 0 {
                 let _ = write!(path, "M{x:.1} {y:.1}");
@@ -26,7 +29,8 @@ fn build_path(distances_km: &[f64], levels_db: &[f64], map_x: impl Fn(f64) -> f6
                 let _ = write!(path, " L{x:.1} {y:.1}");
             }
             path
-        })
+        },
+    )
 }
 
 #[component]
@@ -172,8 +176,8 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
                 <path d=path class=style::trace_line />
             </svg>
 
-            {tooltip}
+        {tooltip}
         </div>
     }
-        .into_any()
+    .into_any()
 }
