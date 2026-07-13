@@ -18,7 +18,8 @@ web-sys = { version = "0.3.102", features = [
     "KeyboardEvent",
     "Element",
     "DomRect",
-    "SvgsvgElement"
+    "SvgsvgElement",
+    "WheelEvent"
 ] }
 shared-types = { path = "shared-types" }
 leptos-use = "0.19.0"
