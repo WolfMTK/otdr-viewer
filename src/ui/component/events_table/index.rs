@@ -1,7 +1,8 @@
-use crate::ui::trace_math::level_at;
 use leptos::prelude::*;
 use shared_types::SorEvent;
 use stylance::import_style;
+
+use crate::ui::trace_math::level_at;
 
 import_style!(style, "index.module.css");
 
