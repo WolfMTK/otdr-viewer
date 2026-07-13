@@ -2,11 +2,14 @@ use leptos::prelude::*;
 use stylance::import_style;
 
 use crate::ui::component::helpers::toggle_class;
+use crate::ui::context::ChartView;
 
 import_style!(style, "index.module.css");
 
 #[component]
 pub fn Toolbar() -> impl IntoView {
+    let chart_view = ChartView::use_context();
+
     let grid_on = RwSignal::new(true);
     let markers_on = RwSignal::new(false);
     let legend_on = RwSignal::new(false);
@@ -22,13 +25,27 @@ pub fn Toolbar() -> impl IntoView {
     view! {
         <div class=style::toolbar>
             <div class=style::group>
-                <button class=style::icon_button title="Весь масштаб">
+                <button
+                    class=style::icon_button
+                    title="Весь масштаб"
+                    prop:disabled=move || chart_view.is_fitted()
+                    on:click=move |_| chart_view.fit()
+                >
                     <img src="public/toolbar-fit-view.svg" alt="fit view" draggable="false" />
-        </button>
-                <button class=style::icon_button title="Увеличение">
+                </button>
+                <button
+                    class=style::icon_button
+                    title="Увеличение"
+                    on:click=move |_| chart_view.zoom_in()
+                >
                     <img src="public/toolbar-zoom-in.svg" alt="zoom in" draggable="false" />
                 </button>
-                <button class=style::icon_button title="Уменьшение">
+                <button
+                    class=style::icon_button
+                    title="Уменьшение"
+                    prop:disabled=move || chart_view.is_fitted()
+                    on:click=move |_| chart_view.zoom_out()
+                >
                     <img src="public/toolbar-zoom-out.svg" alt="zoom out" draggable="false" />
                 </button>
             </div>
