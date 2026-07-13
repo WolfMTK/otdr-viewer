@@ -19,14 +19,18 @@ pub struct ChartView {
 }
 
 impl ChartView {
-    const STEP: f64 = 1.4;
+    const BUTTON_STEP: f64 = 1.4;
 
-    fn from_context() -> Self {
+    pub fn use_context() -> Self {
         use_context::<ChartView>().expect("ChartView is provided at app root")
     }
 
     pub fn window(&self) -> (f64, f64) {
         self.view.get().unwrap_or_else(|| self.full.get())
+    }
+
+    fn window_untracked(&self) -> (f64, f64) {
+        self.view.get_untracked().unwrap_or_else(|| self.full.get_untracked())
     }
 
     pub fn fit(&self) {
@@ -49,11 +53,11 @@ impl ChartView {
     }
 
     pub fn zoom_in(&self) {
-        self.zoom_center(Self::STEP);
+        self.zoom_center(Self::BUTTON_STEP);
     }
 
     pub fn zoom_out(&self) {
-        self.zoom_center(1.0 / Self::STEP);
+        self.zoom_center(1.0 / Self::BUTTON_STEP);
     }
 
     pub fn pan(&self, delta: f64) {
@@ -69,10 +73,6 @@ impl ChartView {
             self.view.set(Some(next));
         }
     }
-
-    fn window_untracked(&self) -> (f64, f64) {
-        self.view.get_untracked().unwrap_or_else(|| self.full.get_untracked())
-    }
 }
 
 pub fn provide_app_context() {
@@ -83,10 +83,4 @@ pub fn provide_app_context() {
         full: RwSignal::new((0.0, 1.0)),
         view: RwSignal::new(None),
     });
-}
-
-impl ChartView {
-    pub fn use_context() -> Self {
-        Self::from_context()
-    }
 }
