@@ -7,7 +7,7 @@ use stylance::import_style;
 use wasm_bindgen::JsCast;
 
 use crate::ui::context::ChartView;
-use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, svg_num as f};
+use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, svg_num as f, visible_range};
 
 import_style!(style, "index.module.css");
 
@@ -54,13 +54,19 @@ fn km_per_client_px(rect_width: f64, window: Window) -> f64 {
     (hi - lo) * VIEW_W / (rect_width * PLOT_W)
 }
 
-fn pointer_km(target: Option<web_sys::EventTarget>, client_x: f64, window: Window) -> Option<f64> {
-    let rect = target_rect(target)?;
-    let width = rect.width();
-    let frac = ((client_x - rect.left()) / width).clamp(0.0, 1.0);
+fn client_x_to_km(client_x: f64, rect_left: f64, rect_width: f64, window: Window) -> Option<f64> {
+    if rect_width <= 0.0 {
+        return None;
+    }
+    let frac = ((client_x - rect_left) / rect_width).clamp(0.0, 1.0);
     let vb_x = frac * VIEW_W;
     let plot_frac = ((vb_x - PAD_LEFT) / PLOT_W).clamp(0.0, 1.0);
     Some(window.0 + plot_frac * (window.1 - window.0))
+}
+
+fn pointer_km(target: Option<web_sys::EventTarget>, client_x: f64, window: Window) -> Option<f64> {
+    let rect = target_rect(target)?;
+    client_x_to_km(client_x, rect.left(), rect.width(), window)
 }
 
 fn movement_km(target: Option<web_sys::EventTarget>, movement_x: f64, window: Window) -> Option<f64> {
@@ -211,12 +217,10 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
     let lvl_path = levels_db.clone();
     let path = move || {
         let (lo, hi) = window.get();
-        let start = dist_path.partition_point(|&d| d < lo).saturating_sub(1);
-        let end = (dist_path.partition_point(|&d| d <= hi) + 1).min(dist_path.len());
-        if start >= end {
-            return String::new();
+        match visible_range(&dist_path, lo, hi) {
+            Some((start, end)) => build_path(&dist_path[start..end], &lvl_path[start..end], map_x, map_y),
+            None => String::new(),
         }
-        build_path(&dist_path[start..end], &lvl_path[start..end], map_x, map_y)
     };
 
     let y_grid = render_y_grid(v_min_raw, v_max_raw, map_y);
@@ -303,4 +307,65 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
         </div>
     }
     .into_any()
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::ui::component::chart::index::{client_x_to_km, km_per_client_px, PAD_LEFT, PAD_RIGHT, VIEW_W};
+
+    fn approx(a: f64, b: f64) {
+        assert!((a - b).abs() < 1e-9, "expected {b}, got {a}");
+    }
+
+    #[rstest]
+    fn client_x_at_plot_left_edge_maps_to_window_start() {
+        let km = client_x_to_km(PAD_LEFT, 0.0, VIEW_W, (0.0, 100.0)).unwrap();
+        approx(km, 0.0);
+    }
+
+    #[rstest]
+    fn client_x_at_plot_right_edge_maps_to_window_end() {
+        let km = client_x_to_km(VIEW_W - PAD_RIGHT, 0.0, VIEW_W, (0.0, 100.0)).unwrap();
+        approx(km, 100.0);
+    }
+
+    #[rstest]
+    fn client_x_before_rect_left_clamps_to_window_start() {
+        let km = client_x_to_km(0.0, 0.0, VIEW_W, (0.0, 100.0)).unwrap();
+        approx(km, 0.0);
+    }
+
+    #[rstest]
+    fn client_x_past_rect_right_clamps_to_window_end() {
+        let km = client_x_to_km(VIEW_W * 2.0, 0.0, VIEW_W, (0.0, 100.0)).unwrap();
+        approx(km, 100.0);
+    }
+
+    #[rstest]
+    fn client_x_respects_rect_left_offset() {
+        let a = client_x_to_km(300.0, 0.0, 500.0, (25.0, 75.0)).unwrap();
+        let b = client_x_to_km(350.0, 50.0, 500.0, (25.0, 75.0)).unwrap();
+        approx(a, b);
+    }
+
+    #[rstest]
+    fn client_x_zero_width_rect_is_none() {
+        assert_eq!(client_x_to_km(10.0, 0.0, 0.0, (0.0, 100.0)), None);
+    }
+
+    #[rstest]
+    fn km_per_client_px_is_proportional_to_window_span() {
+        let narrow = km_per_client_px(VIEW_W, (0.0, 10.0));
+        let wide = km_per_client_px(VIEW_W, (0.0, 100.0));
+        approx(wide, narrow * 10.0);
+    }
+
+    #[rstest]
+    fn km_per_client_px_scales_inversely_with_rect_width() {
+        let narrow_rect = km_per_client_px(500.0, (0.0, 100.0));
+        let wide_rect = km_per_client_px(1000.0, (0.0, 100.0));
+        approx(narrow_rect, wide_rect * 2.0);
+    }
 }

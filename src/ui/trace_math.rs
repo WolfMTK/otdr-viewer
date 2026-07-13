@@ -88,11 +88,20 @@ pub fn pan_window(window: (f64, f64), full: (f64, f64), delta: f64) -> (f64, f64
     clamp_window((window.0 + delta, window.1 + delta), full)
 }
 
+pub fn visible_range(distances: &[f64], lo: f64, hi: f64) -> Option<(usize, usize)> {
+    if distances.is_empty() {
+        return None;
+    }
+    let start = distances.partition_point(|&d| d < lo).saturating_sub(1);
+    let end = (distances.partition_point(|&d| d <= hi) + 1).min(distances.len());
+    (start < end).then_some((start, end))
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
-    use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, pan_window, zoom_window};
+    use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, pan_window, visible_range, zoom_window};
 
     fn approx(a: (f64, f64), b: (f64, f64)) {
         assert!(
@@ -143,6 +152,35 @@ mod tests {
     fn clamp_handles_inverted_input() {
         let w = clamp_window((10.0, 5.0), (100.0, 0.0));
         assert!(w.0 < w.1 && w.0 >= 0.0 && w.1 <= 100.0, "got {w:?}");
+    }
+
+    #[rstest]
+    fn visible_range_includes_one_neighbour_each_side() {
+        let d = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(visible_range(&d, 1.5, 3.5), Some((1, 5)));
+    }
+
+    #[rstest]
+    fn visible_range_covers_whole_domain_when_window_is_wider() {
+        let d = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(visible_range(&d, -10.0, 10.0), Some((0, 6)));
+    }
+
+    #[rstest]
+    fn visible_range_single_point() {
+        assert_eq!(visible_range(&[2.0], 0.0, 5.0), Some((0, 1)));
+    }
+
+    #[rstest]
+    fn visible_range_empty_distances_is_none() {
+        assert_eq!(visible_range(&[], 0.0, 1.0), None);
+    }
+
+    #[rstest]
+    fn visible_range_degenerate_window_at_edges() {
+        let d = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(visible_range(&d, 0.0, 0.0), Some((0, 2)));
+        assert_eq!(visible_range(&d, 5.0, 5.0), Some((4, 6)));
     }
 
     #[rstest]
