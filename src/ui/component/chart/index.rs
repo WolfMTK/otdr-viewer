@@ -6,7 +6,7 @@ use shared_types::SorEvent;
 use stylance::import_style;
 use wasm_bindgen::JsCast;
 
-use crate::ui::context::ChartView;
+use crate::ui::context::{ChartView, GridVisible};
 use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, svg_num as f, visible_range};
 
 import_style!(style, "index.module.css");
@@ -188,6 +188,7 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
     }
 
     let chart_view = ChartView::use_context();
+    let GridVisible(grid_visible) = use_context::<GridVisible>().expect("GridVisible is provided at app root");
 
     let d_min = 0.0_f64;
     let d_max = distances_km.iter().cloned().fold(f64::MIN, f64::max).max(0.001);
@@ -223,10 +224,13 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
         }
     };
 
-    let y_grid = render_y_grid(v_min_raw, v_max_raw, map_y);
+    let y_grid = move || grid_visible.get().then(|| render_y_grid(v_min_raw, v_max_raw, map_y));
     let x_grid = move || {
+        if !grid_visible.get() {
+            return None;
+        }
         let (lo, hi) = window.get();
-        render_x_grid(lo, hi, map_x)
+        Some(render_x_grid(lo, hi, map_x))
     };
     let top_ticks = move || {
         let (lo, hi) = window.get();
