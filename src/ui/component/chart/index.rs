@@ -297,10 +297,10 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
                     class=style::plot_bg
                 />
                 {y_grid}
-                {move || x_grid()}
-                {ab_overlay.map(|render| view! { <g clip-path="url(#chart-plot-clip)">{move || render()}</g> })}
-                {move || top_ticks()}
-                <path clip-path="url(#chart-plot-clip)" d=move || path() class=style::trace_line />
+                {x_grid}
+                {ab_overlay.map(|render| view! { <g clip-path="url(#chart-plot-clip)">{render}</g> })}
+                {top_ticks}
+                <path clip-path="url(#chart-plot-clip)" d=path class=style::trace_line />
             </svg>
 
         {tooltip}
