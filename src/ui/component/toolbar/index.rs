@@ -2,15 +2,15 @@ use leptos::prelude::*;
 use stylance::import_style;
 
 use crate::ui::component::helpers::toggle_class;
-use crate::ui::context::ChartView;
+use crate::ui::context::{ChartView, GridVisible};
 
 import_style!(style, "index.module.css");
 
 #[component]
 pub fn Toolbar() -> impl IntoView {
     let chart_view = ChartView::use_context();
+    let GridVisible(grid_on) = use_context::<GridVisible>().expect("GridVisible is provided at app root");
 
-    let grid_on = RwSignal::new(true);
     let markers_on = RwSignal::new(false);
     let legend_on = RwSignal::new(false);
     let route_scheme_on = RwSignal::new(false);
