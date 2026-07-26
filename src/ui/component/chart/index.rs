@@ -6,7 +6,7 @@ use shared_types::SorEvent;
 use stylance::import_style;
 use wasm_bindgen::JsCast;
 
-use crate::ui::context::{ChartView, GridVisible};
+use crate::ui::context::{ChartView, GridVisible, MarkersVisible};
 use crate::ui::trace_math::{clamp_window, level_at, linspace, nice_step, svg_num as f, visible_range};
 
 import_style!(style, "index.module.css");
@@ -189,6 +189,8 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
 
     let chart_view = ChartView::use_context();
     let GridVisible(grid_visible) = use_context::<GridVisible>().expect("GridVisible is provided at app root");
+    let MarkersVisible(markers_visible) =
+        use_context::<MarkersVisible>().expect("MarkersVisible is provided at app root");
 
     let d_min = 0.0_f64;
     let d_max = distances_km.iter().cloned().fold(f64::MIN, f64::max).max(0.001);
@@ -238,8 +240,16 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
     };
 
     let ab = ab_endpoints(&events);
-    let ab_overlay = ab.map(|(da, db)| move || render_ab_overlay(da, db, map_x));
-    let tooltip = ab.and_then(|(da, db)| render_tooltip(&distances_km, &levels_db, da, db));
+    let ab_overlay = move || match (markers_visible.get(), ab) {
+        (true, Some((da, db))) => Some(render_ab_overlay(da, db, map_x)),
+        _ => None,
+    };
+    let tooltip = move || {
+        if !markers_visible.get() {
+            return None;
+        }
+        ab.and_then(|(da, db)| render_tooltip(&distances_km, &levels_db, da, db))
+    };
 
     let dragging = RwSignal::new(false);
 
@@ -302,7 +312,7 @@ pub fn Chart(distances_km: Vec<f64>, levels_db: Vec<f64>, events: Vec<SorEvent>)
                 />
                 {y_grid}
                 {x_grid}
-                {ab_overlay.map(|render| view! { <g clip-path="url(#chart-plot-clip)">{render}</g> })}
+                {move || ab_overlay().map(|content| view! { <g clip-path="url(#chart-plot-clip)">{content}</g> })}
                 {top_ticks}
                 <path clip-path="url(#chart-plot-clip)" d=path class=style::trace_line />
             </svg>
