@@ -16,6 +16,9 @@ pub struct CompareMode(pub RwSignal<bool>);
 pub struct GridVisible(pub RwSignal<bool>);
 
 #[derive(Clone, Copy)]
+pub struct MarkersVisible(pub RwSignal<bool>);
+
+#[derive(Clone, Copy)]
 pub struct ChartView {
     pub full: RwSignal<(f64, f64)>,
     pub view: RwSignal<Option<(f64, f64)>>,
@@ -83,6 +86,7 @@ pub fn provide_app_context() {
     provide_context(OpenedSor(RwSignal::new(None)));
     provide_context(CompareMode(RwSignal::new(false)));
     provide_context(GridVisible(RwSignal::new(true)));
+    provide_context(MarkersVisible(RwSignal::new(false)));
     provide_context(ChartView {
         full: RwSignal::new((0.0, 1.0)),
         view: RwSignal::new(None),

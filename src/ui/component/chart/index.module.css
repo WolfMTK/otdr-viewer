@@ -76,6 +76,7 @@
 
 .ab_badge {
     fill: #3b6ef5;
+    cursor: ew-resize;
 }
 
 .ab_badge_label {
@@ -87,13 +88,12 @@
 
 .tooltip {
     position: absolute;
-    top: 16px;
-    right: 16px;
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     padding: 10px 12px;
     min-width: 150px;
+    pointer-events: none;
 }
 
 .tooltip_row {
