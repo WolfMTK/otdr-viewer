@@ -10,8 +10,7 @@ import_style!(style, "index.module.css");
 pub fn Toolbar() -> impl IntoView {
     let chart_view = ChartView::use_context();
     let GridVisible(grid_on) = use_context::<GridVisible>().expect("GridVisible is provided at app root");
-    let MarkersVisible(markers_on) =
-        use_context::<MarkersVisible>().expect("MarkersVisible is provided at app root");
+    let MarkersVisible(markers_on) = use_context::<MarkersVisible>().expect("MarkersVisible is provided at app root");
 
     let legend_on = RwSignal::new(false);
     let route_scheme_on = RwSignal::new(false);
