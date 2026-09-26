@@ -1,3 +1,4 @@
+pub mod chart;
 mod icons;
 mod theme;
 pub mod title_bar;
