@@ -1,6 +1,15 @@
 [package]
 name = "view"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
+eframe.workspace = true
+egui_extras.workspace = true
+view_model.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+usvg.workspace = true
+egui_kittest.workspace = true
