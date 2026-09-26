@@ -38,10 +38,15 @@ mod tests {
     #[rstest]
     fn render_does_not_panic_and_drains_commands() {
         let mut vm = AppViewModel::new();
+        vm.title_bar.minimize();
+
         let mut harness = Harness::new_ui(|ui| {
             crate::setup(ui.ctx());
             crate::render(ui, &mut vm);
         });
         harness.run();
+        drop(harness);
+
+        assert!(vm.title_bar.take_commands().is_empty());
     }
 }
