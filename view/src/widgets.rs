@@ -66,14 +66,20 @@ impl IconButton {
 
 impl Widget for IconButton {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (rect, response) = ui.allocate_exact_size(Vec2::splat(self.button_size), Sense::click());
+        let (rect, response) =
+            ui.allocate_exact_size(Vec2::splat(self.button_size), Sense::click());
         let hovered = response.contains_pointer();
 
         if ui.is_rect_visible(rect) {
             if hovered && !self.flat {
-                ui.painter().rect_filled(rect, BUTTON_RADIUS, theme::HOVER_FILL);
+                ui.painter()
+                    .rect_filled(rect, BUTTON_RADIUS, theme::HOVER_FILL);
             }
-            let color = if hovered { self.style.hover } else { self.style.normal };
+            let color = if hovered {
+                self.style.hover
+            } else {
+                self.style.normal
+            };
             let glyph_rect = Rect::from_center_size(rect.center(), Vec2::splat(self.icon_size));
             icon(self.glyph, color, self.icon_size).paint_at(ui, glyph_rect);
         }
