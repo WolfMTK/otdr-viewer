@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 chrono.workspace = true
+model.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

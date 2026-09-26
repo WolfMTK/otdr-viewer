@@ -8,6 +8,9 @@ license.workspace = true
 eframe.workspace = true
 egui_extras.workspace = true
 view_model.workspace = true
+model.workspace = true
+rfd.workspace = true
+pollster.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

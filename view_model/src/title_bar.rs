@@ -1,11 +1,13 @@
 use crate::window::WindowCommand;
 
 pub const MENU_ITEMS: [&str; 4] = ["Файл", "Редактирование", "Вид", "Справка"];
+const FILE_MENU: usize = 0;
 
 #[derive(Debug, Default)]
 pub struct TitleBarViewModel {
     menu_open: bool,
     maximized: bool,
+    open_file_requested: bool,
     commands: Vec<WindowCommand>,
 }
 
@@ -38,8 +40,15 @@ impl TitleBarViewModel {
         self.menu_open = false;
     }
 
-    pub fn select_menu_item(&mut self, _index: usize) {
+    pub fn select_menu_item(&mut self, index: usize) {
         self.close_menu();
+        if index == FILE_MENU {
+            self.open_file_requested = true;
+        }
+    }
+
+    pub fn take_open_file_request(&mut self) -> bool {
+        std::mem::take(&mut self.open_file_requested)
     }
 
     pub fn minimize(&mut self) {
@@ -80,8 +89,23 @@ mod tests {
     #[test]
     fn selecting_item_closes_menu() {
         let mut vm = with_open_menu();
-        vm.select_menu_item(0);
+        vm.select_menu_item(2);
         assert!(!vm.menu_open());
+    }
+
+    #[test]
+    fn file_menu_requests_open_once() {
+        let mut vm = with_open_menu();
+        vm.select_menu_item(0);
+        assert!(vm.take_open_file_request());
+        assert!(!vm.take_open_file_request());
+    }
+
+    #[test]
+    fn other_menu_items_do_not_request_open() {
+        let mut vm = with_open_menu();
+        vm.select_menu_item(1);
+        assert!(!vm.take_open_file_request());
     }
 
     #[test]
