@@ -1,14 +1,15 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use crate::title_bar::TitleBarViewModel;
+
+pub mod title_bar;
+pub mod window;
+
+#[derive(Debug, Default)]
+pub struct AppViewModel {
+    pub title_bar: TitleBarViewModel,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl AppViewModel {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
