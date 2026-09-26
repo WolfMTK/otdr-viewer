@@ -7,7 +7,6 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        egui_extras::install_image_loaders(&cc.egui_ctx);
         view::setup(&cc.egui_ctx);
         Self {
             view_model: AppViewModel::new(),
