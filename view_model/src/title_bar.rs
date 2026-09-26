@@ -60,3 +60,59 @@ impl TitleBarViewModel {
         self.commands.push(WindowCommand::StartDrag);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::title_bar::TitleBarViewModel;
+    use crate::window::WindowCommand;
+
+    fn with_open_menu() -> TitleBarViewModel {
+        let mut vm = TitleBarViewModel::new();
+        vm.open_menu();
+        vm
+    }
+
+    #[test]
+    fn menu_closed_by_default() {
+        assert!(!TitleBarViewModel::new().menu_open());
+    }
+
+    #[test]
+    fn selecting_item_closes_menu() {
+        let mut vm = with_open_menu();
+        vm.select_menu_item(0);
+        assert!(!vm.menu_open());
+    }
+
+    #[test]
+    fn start_drag_closes_menu_and_emits_command() {
+        let mut vm = with_open_menu();
+        vm.start_drag();
+        assert!(!vm.menu_open());
+        assert_eq!(vm.take_commands(), [WindowCommand::StartDrag]);
+    }
+
+    #[test]
+    fn toggle_maximize_inverts_current_state() {
+        let mut vm = TitleBarViewModel::new();
+        vm.toggle_maximize();
+        vm.set_maximized(true);
+        vm.toggle_maximize();
+        assert_eq!(
+            vm.take_commands(),
+            [
+                WindowCommand::SetMaximized(true),
+                WindowCommand::SetMaximized(false)
+            ]
+        );
+    }
+
+    #[test]
+    fn take_commands_drains_queue_in_order() {
+        let mut vm = TitleBarViewModel::new();
+        vm.minimize();
+        vm.close_window();
+        assert_eq!(vm.take_commands(), [WindowCommand::Minimize, WindowCommand::Close]);
+        assert!(vm.take_commands().is_empty());
+    }
+}
