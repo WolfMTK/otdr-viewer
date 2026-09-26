@@ -6,6 +6,5 @@ license.workspace = true
 
 [dependencies]
 eframe.workspace = true
-egui_extras.workspace = true
 view_model.workspace = true
 view.workspace = true
