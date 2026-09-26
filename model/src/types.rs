@@ -16,12 +16,10 @@ impl FsEntry {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct RecentFileEntry {
-    pub path: String,
-    pub name: String,
-    pub location: String,
-    pub opened_at_label: String,
-    pub length_label: Option<String>,
+pub struct RecentFile {
+    pub path: PathBuf,
+    pub opened_at: SystemTime,
+    pub length_km: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
