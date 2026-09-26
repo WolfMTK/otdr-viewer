@@ -1,5 +1,7 @@
 use crate::title_bar::TitleBarViewModel;
 
+pub mod chart_view;
+pub mod format;
 pub mod title_bar;
 pub mod window;
 
