@@ -1,3 +1,5 @@
+use view_model::chart_view::DistanceRange;
+
 const MAX_TICKS: f64 = 7.0;
 const MANTISSAS: [f64; 4] = [1.0, 2.0, 2.5, 5.0];
 
@@ -22,33 +24,37 @@ pub fn nice_step(range: f64) -> f64 {
         .unwrap_or(10.0 * magnitude)
 }
 
-pub fn visible_range(distances: &[f64], lo: f64, hi: f64) -> Option<(usize, usize)> {
+pub fn visible_range(distances: &[f64], range: DistanceRange) -> Option<(usize, usize)> {
     if distances.is_empty() {
         return None;
     }
-    let start = distances.partition_point(|&d| d < lo).saturating_sub(1);
-    let end = (distances.partition_point(|&d| d <= hi) + 1).min(distances.len());
-    (start < end).then_some((start, end))
+    let first = distances
+        .partition_point(|&d| d < range.start())
+        .saturating_sub(1);
+    let last = (distances.partition_point(|&d| d <= range.end()) + 1).min(distances.len());
+    (first < last).then_some((first, last))
 }
 
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use view_model::chart_view::DistanceRange;
 
     use crate::chart::scale::{linspace, nice_step, visible_range};
 
-    const D: [f64; 6] = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+    const DISTANCES: [f64; 6] = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
 
     #[rstest]
     #[case::adds_neighbours(1.5, 3.5, Some((1, 5)))]
     #[case::wider_than_data(-10.0, 10.0, Some((0, 6)))]
-    fn visible(#[case] lo: f64, #[case] hi: f64, #[case] expected: Option<(usize, usize)>) {
-        assert_eq!(visible_range(&D, lo, hi), expected);
+    fn visible(#[case] start: f64, #[case] end: f64, #[case] expected: Option<(usize, usize)>) {
+        let range = DistanceRange::new(start, end);
+        assert_eq!(visible_range(&DISTANCES, range), expected);
     }
 
     #[test]
     fn visible_range_empty_is_none() {
-        assert_eq!(visible_range(&[], 0.0, 1.0), None);
+        assert_eq!(visible_range(&[], DistanceRange::new(0.0, 1.0)), None);
     }
 
     #[rstest]
