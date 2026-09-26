@@ -116,3 +116,66 @@ fn dot(ui: &mut egui::Ui, color: Color32) -> egui::Response {
     }
     response
 }
+
+#[cfg(test)]
+mod tests {
+    use view_model::title_bar::TitleBarViewModel;
+    use view_model::window::WindowCommand;
+
+    fn open() -> TitleBarViewModel {
+        let mut vm = TitleBarViewModel::new();
+        vm.open_menu();
+        vm
+    }
+
+    #[test]
+    fn menu_closed_by_default() {
+        assert!(!TitleBarViewModel::new().menu_open());
+    }
+
+    #[test]
+    fn selecting_item_closes_menu() {
+        let mut vm = open();
+        vm.select_menu_item(0);
+        assert!(!vm.menu_open());
+    }
+
+    #[test]
+    fn start_drag_closes_menu_and_emits_command() {
+        let mut vm = open();
+        vm.start_drag();
+        assert!(!vm.menu_open());
+        assert_eq!(vm.take_commands(), [WindowCommand::StartDrag]);
+    }
+
+    #[test]
+    fn toggle_maximize_inverts_current_state() {
+        let mut vm = TitleBarViewModel::new();
+        vm.toggle_maximize();
+        vm.set_maximized(true);
+        vm.toggle_maximize();
+        assert_eq!(
+            vm.take_commands(),
+            [
+                WindowCommand::SetMaximized(true),
+                WindowCommand::SetMaximized(false)
+            ]
+        );
+    }
+
+    #[test]
+    fn commands_keep_order() {
+        let mut vm = TitleBarViewModel::new();
+        vm.minimize();
+        vm.close_window();
+        assert_eq!(vm.take_commands(), [WindowCommand::Minimize, WindowCommand::Close]);
+    }
+
+    #[test]
+    fn take_commands_drains_queue() {
+        let mut vm = TitleBarViewModel::new();
+        vm.minimize();
+        vm.take_commands();
+        assert!(vm.take_commands().is_empty());
+    }
+}
