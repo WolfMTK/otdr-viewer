@@ -1,6 +1,5 @@
 use eframe::egui::{
-    self, Align, Layout, Margin, Rect, RichText, Sense, Shadow, Shape, Stroke, StrokeKind, Ui,
-    pos2, vec2,
+    self, Align, Layout, Margin, Rect, RichText, Sense, Shadow, Shape, Stroke, Ui, pos2, vec2,
 };
 use view_model::document::DocumentState;
 
@@ -28,19 +27,14 @@ const FOOTER_SIZE: f32 = 12.0;
 const DASH: f32 = 3.0;
 const DASH_GAP: f32 = 2.0;
 
-pub fn show(
-    ui: &mut Ui,
-    state: &DocumentState,
-    files_hovered: bool,
-    sor_info_open: &mut bool,
-) -> bool {
+pub fn show(ui: &mut Ui, state: &DocumentState, sor_info_open: &mut bool) -> bool {
     let outer_width = CARD_WIDTH + 2.0 * f32::from(CARD_PADDING_X);
     ui.add_space(((ui.available_height() - CARD_HEIGHT) / 2.0).max(0.0));
 
     let mut open_clicked = false;
     ui.horizontal(|ui| {
         ui.add_space(((ui.available_width() - outer_width) / 2.0).max(0.0));
-        let card = egui::Frame::new()
+        egui::Frame::new()
             .fill(theme::BG_SURFACE)
             .corner_radius(CARD_RADIUS)
             .shadow(CARD_SHADOW)
@@ -54,14 +48,6 @@ pub fn show(
                 ui.set_width(CARD_WIDTH);
                 open_clicked = content(ui, state, sor_info_open);
             });
-        if files_hovered {
-            ui.painter().rect_stroke(
-                card.response.rect,
-                CARD_RADIUS,
-                Stroke::new(2.0, theme::ACCENT),
-                StrokeKind::Inside,
-            );
-        }
     });
     open_clicked
 }

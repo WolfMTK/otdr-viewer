@@ -7,6 +7,7 @@ use crate::title_bar::TitleBarViewModel;
 
 pub mod chart_view;
 pub mod document;
+pub mod drop;
 pub mod events;
 pub mod format;
 pub mod markers;

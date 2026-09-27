@@ -22,6 +22,7 @@ pub const HOVER_FILL: Color32 = Color32::from_black_alpha(15);
 pub const WIDGET_HOVER: Color32 = Color32::from_rgb(0xf5, 0xf5, 0xf4);
 pub const WIDGET_ACTIVE: Color32 = Color32::from_rgb(0xea, 0xea, 0xe8);
 pub const ERROR: Color32 = Color32::from_rgb(0xc6, 0x28, 0x28);
+pub const ERROR_SOFT: Color32 = Color32::from_rgb(0xfd, 0xec, 0xec);
 
 pub fn apply(ctx: &egui::Context) {
     ctx.set_theme(egui::ThemePreference::Light);

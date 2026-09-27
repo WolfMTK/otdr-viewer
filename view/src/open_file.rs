@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use eframe::egui::{self, Frame, Id, Modal};
 use view_model::document::DocumentViewModel;
+use view_model::drop::{DropHint, drop_hint, first_sor_file};
 
 pub fn pick(ctx: &egui::Context, document: &mut DocumentViewModel, parent: Option<&eframe::Frame>) {
     if document.is_picking() {
@@ -33,14 +34,14 @@ pub fn open_dropped(ctx: &egui::Context, document: &mut DocumentViewModel) {
     if document.is_picking() {
         return;
     }
-    let dropped = ctx.input(|i| i.raw.dropped_files.first().map(|f| f.path().to_path_buf()));
+    let dropped = ctx.input(|i| first_sor_file(i.raw.dropped_files.iter().map(|f| f.path())));
     if let Some(path) = dropped {
         open(ctx, document, path);
     }
 }
 
-pub fn files_hovered(ctx: &egui::Context) -> bool {
-    ctx.input(|i| !i.raw.hovered_files.is_empty())
+pub fn hovered_drop(ctx: &egui::Context) -> Option<DropHint> {
+    ctx.input(|i| drop_hint(i.raw.hovered_files.iter().map(|f| f.path.as_deref())))
 }
 
 pub fn open(ctx: &egui::Context, document: &mut DocumentViewModel, path: PathBuf) {

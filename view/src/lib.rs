@@ -1,4 +1,5 @@
 mod chart;
+mod drop_overlay;
 mod events_table;
 mod icons;
 mod open_file;
@@ -43,6 +44,7 @@ pub fn render(ui: &mut egui::Ui, vm: &mut AppViewModel, parent_window: Option<&e
     {
         open_file::open(&ctx, &mut vm.document, path);
     }
+    let drop_area = ui.available_rect_before_wrap();
 
     if let Some(file) = vm.document.opened_mut() {
         toolbar::show(ui, file.chart_mut(), &mut vm.chart_settings);
@@ -50,24 +52,22 @@ pub fn render(ui: &mut egui::Ui, vm: &mut AppViewModel, parent_window: Option<&e
         events_table::show(ui, file.events());
     }
 
-    let files_hovered = open_file::files_hovered(&ctx);
     let settings = vm.chart_settings;
     egui::CentralPanel::default()
         .frame(egui::Frame::new().fill(theme::BG_CONTENT))
         .show(ui, |ui| match vm.document.opened_mut() {
             Some(file) => chart::show(ui, file.chart_parts_mut(), &settings),
             None => {
-                open_requested |= start_screen::show(
-                    ui,
-                    vm.document.state(),
-                    files_hovered,
-                    &mut vm.sor_info_open,
-                );
+                open_requested |=
+                    start_screen::show(ui, vm.document.state(), &mut vm.sor_info_open);
             }
         });
 
     if open_requested {
         open_file::pick(&ctx, &mut vm.document, parent_window);
+    }
+    if !vm.document.is_picking() {
+        drop_overlay::show(&ctx, drop_area, open_file::hovered_drop(&ctx));
     }
     open_file::block_while_picking(&ctx, &vm.document);
     sor_info::show(&ctx, &mut vm.sor_info_open);
