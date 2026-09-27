@@ -16,11 +16,21 @@ pub struct RecentFileRow {
     pub length: Option<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct RecentFilesViewModel {
     files: Vec<RecentFile>,
     pub query: String,
     pub panel_open: bool,
+}
+
+impl Default for RecentFilesViewModel {
+    fn default() -> Self {
+        Self {
+            files: Vec::new(),
+            query: String::new(),
+            panel_open: true,
+        }
+    }
 }
 
 impl RecentFilesViewModel {
@@ -80,7 +90,7 @@ pub fn filter_by_name<'a>(files: &'a [RecentFile], query: &str) -> Vec<&'a Recen
         .collect()
 }
 
-fn file_name(path: &Path) -> String {
+pub fn file_name(path: &Path) -> String {
     path.file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| path.display().to_string())

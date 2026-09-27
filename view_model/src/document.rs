@@ -9,6 +9,7 @@ use crate::chart_view::{ChartView, DistanceRange, LevelRange};
 use crate::events::{EventRow, event_rows};
 use crate::markers::{Markers, ab_endpoints};
 use crate::params::{Params, params};
+use crate::recent_files::file_name;
 
 type LoadResult = Result<SorData, String>;
 
@@ -128,6 +129,15 @@ impl DocumentViewModel {
 
     pub fn is_picking(&self) -> bool {
         self.picking
+    }
+
+    pub fn status(&self) -> String {
+        match &self.state {
+            DocumentState::Empty => "Откройте файл .sor или перетащите его в окно".to_string(),
+            DocumentState::Loading(path) => format!("Открываю {}…", file_name(path)),
+            DocumentState::Opened(file) => file.path.display().to_string(),
+            DocumentState::Failed { message, .. } => message.clone(),
+        }
     }
 
     pub fn open(&mut self, path: PathBuf, on_update: impl Fn() + Send + 'static) {
@@ -397,5 +407,19 @@ mod tests {
             std::thread::sleep(Duration::from_millis(1));
         }
         assert!(!vm.poll());
+    }
+
+    #[test]
+    fn status_follows_document_state() {
+        let mut vm = DocumentViewModel::default();
+        assert!(vm.status().contains("Откройте файл"));
+
+        vm.start(file("/data/line.sor"), ok(1.0), || {}, false);
+        wait_until_idle(&mut vm);
+        assert_eq!(vm.status(), PathBuf::from("/data/line.sor").display().to_string());
+
+        vm.start(file("bad.sor"), |_| Err("broken".into()), || {}, false);
+        wait_until_idle(&mut vm);
+        assert!(vm.status().contains("broken"));
     }
 }

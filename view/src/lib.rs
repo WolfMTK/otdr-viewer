@@ -7,6 +7,7 @@ mod recent_files;
 mod sidebar;
 mod sor_info;
 mod start_screen;
+pub mod status_bar;
 mod theme;
 pub mod title_bar;
 mod toolbar;
@@ -32,9 +33,12 @@ pub fn render(ui: &mut egui::Ui, vm: &mut AppViewModel, parent_window: Option<&e
     let mut open_requested = vm.title_bar.take_open_file_request();
     open_file::open_dropped(&ctx, &mut vm.document);
 
-    sidebar::show(ui, &mut vm.recent_files.panel_open, &mut vm.sor_info_open);
+    status_bar::show(ui, &vm.document.status());
+    let file_opened = vm.document.opened().is_some();
+    sidebar::show(ui, &mut vm.recent_files.panel_open, &mut vm.sor_info_open, file_opened);
+    let current = vm.document.opened().map(|file| file.path());
     if vm.recent_files.panel_open
-        && let Some(path) = recent_files::show(ui, &mut vm.recent_files)
+        && let Some(path) = recent_files::show(ui, &mut vm.recent_files, current)
         && !vm.document.is_picking()
     {
         open_file::open(&ctx, &mut vm.document, path);

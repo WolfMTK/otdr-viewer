@@ -10,6 +10,12 @@ pub enum Icon {
     Markers,
     Folder,
     Info,
+    Upload,
+    FolderOpen,
+    Search,
+    Trash,
+    File,
+    Collapse,
 }
 
 impl Icon {
@@ -23,6 +29,12 @@ impl Icon {
             Icon::Markers => egui::include_image!("../assets/icons/markers.svg"),
             Icon::Folder => egui::include_image!("../assets/icons/folder.svg"),
             Icon::Info => egui::include_image!("../assets/icons/info.svg"),
+            Icon::Upload => egui::include_image!("../assets/icons/upload.svg"),
+            Icon::FolderOpen => egui::include_image!("../assets/icons/folder-open.svg"),
+            Icon::Search => egui::include_image!("../assets/icons/search.svg"),
+            Icon::Trash => egui::include_image!("../assets/icons/trash.svg"),
+            Icon::File => egui::include_image!("../assets/icons/file.svg"),
+            Icon::Collapse => egui::include_image!("../assets/icons/collapse.svg"),
         }
     }
 }
@@ -48,6 +60,15 @@ mod tests {
     const ZOOM_IN: &str = include_str!("../assets/icons/zoom-in.svg");
     const ZOOM_OUT: &str = include_str!("../assets/icons/zoom-out.svg");
     const GRID: &str = include_str!("../assets/icons/grid.svg");
+    const MARKERS: &str = include_str!("../assets/icons/markers.svg");
+    const FOLDER: &str = include_str!("../assets/icons/folder.svg");
+    const INFO: &str = include_str!("../assets/icons/info.svg");
+    const UPLOAD: &str = include_str!("../assets/icons/upload.svg");
+    const FOLDER_OPEN: &str = include_str!("../assets/icons/folder-open.svg");
+    const SEARCH: &str = include_str!("../assets/icons/search.svg");
+    const TRASH: &str = include_str!("../assets/icons/trash.svg");
+    const FILE: &str = include_str!("../assets/icons/file.svg");
+    const COLLAPSE: &str = include_str!("../assets/icons/collapse.svg");
 
     #[rstest]
     #[case::menu(MENU)]
@@ -66,6 +87,15 @@ mod tests {
     #[case::zoom_in(ZOOM_IN)]
     #[case::zoom_out(ZOOM_OUT)]
     #[case::grid(GRID)]
+    #[case::markers(MARKERS)]
+    #[case::folder(FOLDER)]
+    #[case::info(INFO)]
+    #[case::upload(UPLOAD)]
+    #[case::folder_open(FOLDER_OPEN)]
+    #[case::search(SEARCH)]
+    #[case::trash(TRASH)]
+    #[case::file(FILE)]
+    #[case::collapse(COLLAPSE)]
     fn tintable_icon_is_white(#[case] svg: &str) {
         let lower = svg.to_lowercase();
         assert!(
