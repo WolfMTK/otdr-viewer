@@ -8,7 +8,7 @@ edition = "2024"
 license = "Apache-2.0"
 
 [workspace.dependencies]
-eframe = { version = "0.36.2", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+eframe = { version = "0.36.2", default-features = false, features = ["default_fonts", "glow", "x11", "wayland", "persistence"] }
 egui_extras = { version = "0.36.2", features = ["svg"] }
 view_model = { path = "view_model" }
 view = { path = "view" }
@@ -20,3 +20,4 @@ chrono = { version = "0.4.45", default-features = false, features = ["clock", "s
 rfd = "0.17.2"
 pollster = "1.0.1"
 sor-rs = { git = "https://github.com/WolfMTK/sor-rs" }
+serde = {version = "1.0.229", features = ["derive"]}

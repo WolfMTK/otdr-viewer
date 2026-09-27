@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 sor-rs.workspace = true
+serde.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
