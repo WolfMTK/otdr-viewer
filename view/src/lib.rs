@@ -75,3 +75,24 @@ pub fn render(ui: &mut egui::Ui, vm: &mut AppViewModel, parent_window: Option<&e
         window_resize::handle_window_resize(&ctx);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use egui_kittest::Harness;
+    use view_model::AppViewModel;
+
+    #[test]
+    fn render_does_not_panic_and_drains_commands() {
+        let mut vm = AppViewModel::new();
+        vm.title_bar.minimize();
+
+        let mut harness = Harness::new_ui(|ui| {
+            crate::setup(ui.ctx());
+            crate::render(ui, &mut vm, None);
+        });
+        harness.run();
+        drop(harness);
+
+        assert!(vm.title_bar.take_commands().is_empty());
+    }
+}
