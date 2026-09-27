@@ -131,3 +131,18 @@ pub fn bottom_border(ui: &Ui, rect: Rect, color: Color32) {
     ui.painter()
         .hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, color));
 }
+
+pub fn right_border(ui: &Ui, rect: Rect, color: Color32) {
+    ui.painter()
+        .vline(rect.right() - 0.5, rect.y_range(), Stroke::new(1.0, color));
+}
+
+pub fn left_border(ui: &Ui, rect: Rect, color: Color32) {
+    ui.painter()
+        .vline(rect.left() + 0.5, rect.y_range(), Stroke::new(1.0, color));
+}
+
+pub fn top_border(ui: &Ui, rect: Rect, color: Color32) {
+    ui.painter()
+        .hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, color));
+}

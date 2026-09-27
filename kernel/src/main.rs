@@ -1,6 +1,8 @@
 use eframe::egui;
 use view_model::AppViewModel;
 
+const RECENT_FILES_KEY: &str = "recent_files";
+
 struct App {
     view_model: AppViewModel,
 }
@@ -8,15 +10,25 @@ struct App {
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         view::setup(&cc.egui_ctx);
-        Self {
-            view_model: AppViewModel::new(),
+        let mut view_model = AppViewModel::new();
+        if let Some(files) = cc
+            .storage
+            .and_then(|storage| eframe::get_value(storage, RECENT_FILES_KEY))
+        {
+            view_model.recent_files.restore(files);
         }
+        Self { view_model }
     }
 }
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         view::render(ui, &mut self.view_model, Some(&*frame));
+    }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        let files = self.view_model.recent_files.files().to_vec();
+        eframe::set_value(storage, RECENT_FILES_KEY, &files);
     }
 }
 

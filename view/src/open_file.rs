@@ -43,7 +43,7 @@ pub fn files_hovered(ctx: &egui::Context) -> bool {
     ctx.input(|i| !i.raw.hovered_files.is_empty())
 }
 
-fn open(ctx: &egui::Context, document: &mut DocumentViewModel, path: PathBuf) {
+pub fn open(ctx: &egui::Context, document: &mut DocumentViewModel, path: PathBuf) {
     let ctx = ctx.clone();
     document.open(path, move || ctx.request_repaint());
 }

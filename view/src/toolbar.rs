@@ -28,6 +28,10 @@ pub fn show(ui: &mut Ui, chart: &mut ChartView, settings: &mut ChartSettings) {
                 if ui.add(grid).on_hover_text("Сетка").clicked() {
                     settings.grid_visible = !settings.grid_visible;
                 }
+                let markers = IconButton::new(Icon::Markers).active(settings.markers_visible);
+                if ui.add(markers).on_hover_text("Маркеры A/B").clicked() {
+                    settings.markers_visible = !settings.markers_visible;
+                }
             });
         });
     widgets::bottom_border(ui, panel.response.rect, theme::BORDER);

@@ -7,9 +7,14 @@ const DROP_OUTLINE_INSET: f32 = 16.0;
 const DROP_OUTLINE_RADIUS: u8 = 12;
 const HINT_FONT_SIZE: f32 = 15.0;
 const GAP: f32 = 12.0;
-const CONTENT_HEIGHT: f32 = 90.0;
+const CONTENT_HEIGHT: f32 = 120.0;
 
-pub fn show(ui: &mut Ui, state: &DocumentState, files_hovered: bool) -> bool {
+pub fn show(
+    ui: &mut Ui,
+    state: &DocumentState,
+    files_hovered: bool,
+    sor_info_open: &mut bool,
+) -> bool {
     if files_hovered {
         ui.painter().rect_stroke(
             ui.max_rect().shrink(DROP_OUTLINE_INSET),
@@ -35,6 +40,10 @@ pub fn show(ui: &mut Ui, state: &DocumentState, files_hovered: bool) -> bool {
         );
         ui.add_space(GAP);
         open_clicked = ui.button("Открыть файл").clicked();
+        ui.add_space(GAP / 2.0);
+        if ui.link("Что такое файл .sor?").clicked() {
+            *sor_info_open = true;
+        }
 
         if let DocumentState::Failed { path, message } = state {
             ui.add_space(GAP);

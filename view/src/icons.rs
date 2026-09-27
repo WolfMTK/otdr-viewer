@@ -7,6 +7,9 @@ pub enum Icon {
     ZoomIn,
     ZoomOut,
     Grid,
+    Markers,
+    Folder,
+    Info,
 }
 
 impl Icon {
@@ -17,6 +20,9 @@ impl Icon {
             Icon::ZoomIn => egui::include_image!("../assets/icons/zoom-in.svg"),
             Icon::ZoomOut => egui::include_image!("../assets/icons/zoom-out.svg"),
             Icon::Grid => egui::include_image!("../assets/icons/grid.svg"),
+            Icon::Markers => egui::include_image!("../assets/icons/markers.svg"),
+            Icon::Folder => egui::include_image!("../assets/icons/folder.svg"),
+            Icon::Info => egui::include_image!("../assets/icons/info.svg"),
         }
     }
 }

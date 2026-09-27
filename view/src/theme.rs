@@ -8,6 +8,7 @@ pub const ACCENT: Color32 = Color32::from_rgb(0x3b, 0x6e, 0xf5);
 pub const ACCENT_SOFT: Color32 = Color32::from_rgb(0xe9, 0xf0, 0xfe);
 pub const INK: Color32 = Color32::from_rgb(0x1f, 0x1f, 0x1f);
 pub const TEXT: Color32 = Color32::from_rgb(0x33, 0x33, 0x31);
+pub const TEXT_MUTED: Color32 = Color32::from_rgb(0x80, 0x80, 0x7c);
 pub const DOT_RED: Color32 = Color32::from_rgb(0xff, 0x5f, 0x57);
 pub const DOT_YELLOW: Color32 = Color32::from_rgb(0xfe, 0xbc, 0x2e);
 pub const DOT_GREEN: Color32 = Color32::from_rgb(0x28, 0xc8, 0x40);

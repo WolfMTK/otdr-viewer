@@ -6,6 +6,9 @@ use model::fs::is_sor_file;
 use model::types::{SorData, SorTrace};
 
 use crate::chart_view::{ChartView, DistanceRange, LevelRange};
+use crate::events::{EventRow, event_rows};
+use crate::markers::{Markers, ab_endpoints};
+use crate::params::{Params, params};
 
 type LoadResult = Result<SorData, String>;
 
@@ -20,13 +23,32 @@ pub struct OpenedFile {
     path: PathBuf,
     data: SorData,
     chart: ChartView,
+    markers: Markers,
+    events: Vec<EventRow>,
+    params: Params,
+}
+
+pub struct ChartParts<'a> {
+    pub trace: &'a SorTrace,
+    pub view: &'a mut ChartView,
+    pub markers: &'a mut Markers,
 }
 
 impl OpenedFile {
     fn new(path: PathBuf, data: SorData) -> Self {
         let trace = &data.trace;
         let chart = ChartView::new(full_range(trace), LevelRange::around(&trace.levels_db));
-        Self { path, data, chart }
+        let markers = ab_endpoints(&data.summary.events, trace);
+        let events = event_rows(&data.summary.events, trace);
+        let params = params(&data.summary);
+        Self {
+            path,
+            data,
+            chart,
+            markers,
+            events,
+            params,
+        }
     }
 
     pub fn path(&self) -> &Path {
@@ -37,12 +59,24 @@ impl OpenedFile {
         &self.data
     }
 
+    pub fn events(&self) -> &[EventRow] {
+        &self.events
+    }
+
+    pub fn params(&self) -> &Params {
+        &self.params
+    }
+
     pub fn chart_mut(&mut self) -> &mut ChartView {
         &mut self.chart
     }
 
-    pub fn trace_and_chart_mut(&mut self) -> (&SorTrace, &mut ChartView) {
-        (&self.data.trace, &mut self.chart)
+    pub fn chart_parts_mut(&mut self) -> ChartParts<'_> {
+        ChartParts {
+            trace: &self.data.trace,
+            view: &mut self.chart,
+            markers: &mut self.markers,
+        }
     }
 }
 
@@ -76,6 +110,13 @@ pub struct DocumentViewModel {
 impl DocumentViewModel {
     pub fn state(&self) -> &DocumentState {
         &self.state
+    }
+
+    pub fn opened(&self) -> Option<&OpenedFile> {
+        match &self.state {
+            DocumentState::Opened(file) => Some(file),
+            _ => None,
+        }
     }
 
     pub fn opened_mut(&mut self) -> Option<&mut OpenedFile> {
@@ -133,9 +174,9 @@ impl DocumentViewModel {
         self.picking = picking;
     }
 
-    pub fn poll(&mut self) {
+    pub fn poll(&mut self) -> bool {
         let Some(receiver) = self.pending.take() else {
-            return;
+            return false;
         };
         loop {
             match receiver.try_recv() {
@@ -143,42 +184,44 @@ impl DocumentViewModel {
                     self.picking = false;
                     self.state = DocumentState::Loading(path);
                 }
-                Ok(Progress::Loaded(result)) => {
-                    self.finish(result);
-                    return;
-                }
+                Ok(Progress::Loaded(result)) => return self.finish(result),
                 Ok(Progress::Cancelled) => {
                     self.picking = false;
-                    return;
+                    return false;
                 }
                 Err(TryRecvError::Empty) => {
                     self.pending = Some(receiver);
-                    return;
+                    return false;
                 }
                 Err(TryRecvError::Disconnected) => {
                     self.picking = false;
-                    self.finish(Err("загрузка прервана".to_string()));
-                    return;
+                    return self.finish(Err("загрузка прервана".to_string()));
                 }
             }
         }
     }
 
-    fn finish(&mut self, result: LoadResult) {
+    fn finish(&mut self, result: LoadResult) -> bool {
         let path = match std::mem::take(&mut self.state) {
             DocumentState::Loading(path) => path,
             other => {
                 self.state = other;
-                return;
+                return false;
             }
         };
-        self.state = match result {
-            Ok(data) => DocumentState::Opened(Box::new(OpenedFile::new(path, data))),
-            Err(error) => DocumentState::Failed {
-                path,
-                message: format!("Не удалось открыть файл: {error}"),
-            },
-        };
+        match result {
+            Ok(data) => {
+                self.state = DocumentState::Opened(Box::new(OpenedFile::new(path, data)));
+                true
+            }
+            Err(error) => {
+                self.state = DocumentState::Failed {
+                    path,
+                    message: format!("Не удалось открыть файл: {error}"),
+                };
+                false
+            }
+        }
     }
 }
 
@@ -341,5 +384,18 @@ mod tests {
 
         let full = vm.opened_mut().unwrap().chart_mut().full();
         assert!(full.span() > 0.0);
+    }
+
+    #[test]
+    fn poll_reports_a_newly_opened_file_once() {
+        let mut vm = DocumentViewModel::default();
+        vm.start(file("a.sor"), ok(1.0), || {}, false);
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !vm.poll() {
+            assert!(Instant::now() < deadline, "file was not opened");
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        assert!(!vm.poll());
     }
 }

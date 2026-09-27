@@ -182,11 +182,15 @@ impl ChartView {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChartSettings {
     pub grid_visible: bool,
+    pub markers_visible: bool,
 }
 
 impl Default for ChartSettings {
     fn default() -> Self {
-        Self { grid_visible: true }
+        Self {
+            grid_visible: true,
+            markers_visible: true,
+        }
     }
 }
 

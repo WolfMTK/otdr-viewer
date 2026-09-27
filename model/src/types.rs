@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use std::time::SystemTime;
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FsEntry {
     pub name: String,
@@ -15,7 +17,7 @@ impl FsEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecentFile {
     pub path: PathBuf,
     pub opened_at: SystemTime,
