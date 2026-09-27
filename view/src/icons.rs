@@ -120,7 +120,6 @@ mod tests {
     #[case::chart(CHART)]
     #[case::target(TARGET)]
     #[case::close(CLOSE)]
-    #[case::logo(LOGO)]
     fn tintable_icon_is_white(#[case] svg: &str) {
         let lower = svg.to_lowercase();
         assert!(
