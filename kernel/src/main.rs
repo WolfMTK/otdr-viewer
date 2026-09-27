@@ -43,8 +43,23 @@ fn main() -> eframe::Result {
         "OTDR Viewer",
         eframe::NativeOptions {
             viewport,
+            event_loop_builder: prefer_x11(),
             ..Default::default()
         },
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
+}
+
+#[cfg(target_os = "linux")]
+fn prefer_x11() -> Option<eframe::EventLoopBuilderHook> {
+    std::env::var_os("DISPLAY")?;
+    Some(Box::new(|builder| {
+        use winit::platform::x11::EventLoopBuilderExtX11;
+        builder.with_x11();
+    }))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn prefer_x11() -> Option<eframe::EventLoopBuilderHook> {
+    None
 }

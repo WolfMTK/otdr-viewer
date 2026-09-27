@@ -8,3 +8,6 @@ license.workspace = true
 eframe.workspace = true
 view_model.workspace = true
 view.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+winit.workspace = true
