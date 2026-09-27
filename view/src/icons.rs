@@ -77,6 +77,7 @@ mod tests {
     const CHART: &str = include_str!("../assets/icons/chart.svg");
     const TARGET: &str = include_str!("../assets/icons/target.svg");
     const CLOSE: &str = include_str!("../assets/icons/close.svg");
+    const LOGO: &str = include_str!("../assets/icons/logo.svg");
 
     #[rstest]
     #[case::menu(MENU)]
@@ -96,6 +97,7 @@ mod tests {
     #[case::chart(CHART)]
     #[case::target(TARGET)]
     #[case::close(CLOSE)]
+    #[case::logo(LOGO)]
     fn asset_is_valid_svg(#[case] svg: &str) {
         usvg::Tree::from_str(svg, &usvg::Options::default()).expect("SVG не парсится");
     }
@@ -118,6 +120,7 @@ mod tests {
     #[case::chart(CHART)]
     #[case::target(TARGET)]
     #[case::close(CLOSE)]
+    #[case::logo(LOGO)]
     fn tintable_icon_is_white(#[case] svg: &str) {
         let lower = svg.to_lowercase();
         assert!(
