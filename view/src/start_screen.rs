@@ -1,11 +1,11 @@
 use eframe::egui::{
-    self, Align, Color32, CornerRadius, Layout, Margin, Rect, RichText, Sense, Shadow, Shape,
-    Stroke, StrokeKind, Ui, pos2, vec2,
+    self, Align, Layout, Margin, Rect, RichText, Sense, Shadow, Shape, Stroke, StrokeKind, Ui,
+    pos2, vec2,
 };
 use view_model::document::DocumentState;
 
 use crate::icons::{Icon, icon};
-use crate::theme;
+use crate::{theme, widgets};
 
 const CARD_WIDTH: f32 = 420.0;
 const CARD_HEIGHT: f32 = 372.0;
@@ -24,16 +24,6 @@ const TILE_RADIUS: u8 = 16;
 const TILE_ICON_SIZE: f32 = 30.0;
 const TITLE_SIZE: f32 = 19.0;
 const SUBTITLE_SIZE: f32 = 14.0;
-const BUTTON_TEXT_SIZE: f32 = 14.0;
-const BUTTON_ICON_SIZE: f32 = 18.0;
-const BUTTON_RADIUS: u8 = 8;
-const BUTTON_PADDING: egui::Vec2 = egui::Vec2::new(20.0, 10.0);
-const BUTTON_SHADOW: Shadow = Shadow {
-    offset: [0, 4],
-    blur: 12,
-    spread: 0,
-    color: Color32::from_rgba_premultiplied(24, 44, 98, 40),
-};
 const FOOTER_SIZE: f32 = 12.0;
 const DASH: f32 = 3.0;
 const DASH_GAP: f32 = 2.0;
@@ -126,30 +116,7 @@ fn upload_tile(ui: &mut Ui) {
 }
 
 fn open_button(ui: &mut Ui) -> bool {
-    let shadow = ui.painter().add(Shape::Noop);
-    let text = RichText::new("Открыть файл...")
-        .size(BUTTON_TEXT_SIZE)
-        .strong()
-        .color(Color32::WHITE);
-    let folder = icon(Icon::FolderOpen, Color32::WHITE, BUTTON_ICON_SIZE);
-    let response = ui
-        .scope(|ui| {
-            ui.spacing_mut().button_padding = BUTTON_PADDING;
-            ui.add(
-                egui::Button::image_and_text(folder, text)
-                    .fill(theme::ACCENT)
-                    .stroke(Stroke::NONE)
-                    .corner_radius(BUTTON_RADIUS),
-            )
-        })
-        .inner;
-    let radius = CornerRadius::same(BUTTON_RADIUS);
-    ui.painter()
-        .set(shadow, BUTTON_SHADOW.as_shape(response.rect, radius));
-    if response.hovered() {
-        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-    }
-    response.clicked()
+    widgets::primary_button(ui, Some(Icon::FolderOpen), "Открыть файл...").clicked()
 }
 
 fn footer(ui: &mut Ui, sor_info_open: &mut bool) {

@@ -335,7 +335,7 @@ mod tests {
         vm.start(file("slow.sor"), slow, || {}, false);
         vm.start(file("fast.sor"), ok(2.0), || {}, false);
         wait_until_idle(&mut vm);
-        release_slow.send(()).unwrap();
+        drop(release_slow);
 
         assert_eq!(opened_path(&mut vm), PathBuf::from("fast.sor"));
     }
