@@ -99,7 +99,7 @@ mod tests {
     #[case::close(CLOSE)]
     #[case::logo(LOGO)]
     fn asset_is_valid_svg(#[case] svg: &str) {
-        usvg::Tree::from_str(svg, &usvg::Options::default()).expect("SVG не парсится");
+        usvg::Tree::from_str(svg, &usvg::Options::default()).expect("SVG failed to parse");
     }
 
     #[rstest]
