@@ -18,7 +18,7 @@ pub fn event_kind_label(kind: &str, is_first: bool) -> &'static str {
         "reflection" => "Разъём",
         "loss/drop/gain" => "Сварной стык",
         "end of fiber" => "Конец волокна",
-        "multiple events" => "Множественное событие",
+        "saturated reflection" => "Отражение (насыщение)",
         _ => "Неизвестно",
     }
 }
@@ -96,7 +96,7 @@ mod tests {
     #[case::connector("reflection", false, "Разъём")]
     #[case::splice("loss/drop/gain", false, "Сварной стык")]
     #[case::end("end of fiber", false, "Конец волокна")]
-    #[case::multiple("multiple events", false, "Множественное событие")]
+    #[case::saturated("saturated reflection", false, "Отражение (насыщение)")]
     #[case::unknown("something else", false, "Неизвестно")]
     fn kind_labels(#[case] kind: &str, #[case] is_first: bool, #[case] expected: &str) {
         assert_eq!(event_kind_label(kind, is_first), expected);

@@ -1,3 +1,5 @@
+mod events;
+mod ideal;
 mod markers;
 mod scale;
 
@@ -5,6 +7,7 @@ use eframe::egui::{
     Align2, CursorIcon, FontId, Painter, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2,
     pos2, vec2,
 };
+use model::sor::downsample_min_max;
 use view_model::chart_view::{ChartSettings, ChartView, DistanceRange, LevelRange};
 use view_model::document::ChartParts;
 
@@ -23,6 +26,8 @@ const WHEEL_ZOOM_SPEED: f64 = 0.002;
 pub fn show(ui: &mut Ui, parts: ChartParts<'_>, settings: &ChartSettings) {
     let ChartParts {
         trace,
+        events,
+        ideal,
         view,
         markers,
     } = parts;
@@ -48,12 +53,27 @@ pub fn show(ui: &mut Ui, parts: ChartParts<'_>, settings: &ChartSettings) {
     painter.rect_filled(plot, 0.0, theme::BG_SURFACE);
     draw_axes(&painter, &mapping, settings.grid_visible);
 
-    let points = (first..last)
-        .map(|i| mapping.to_screen(trace.distances_km[i], trace.levels_db[i]))
+    let columns = plot.width().ceil() as usize;
+    let on_screen = downsample_min_max(
+        &trace.distances_km[first..last],
+        &trace.levels_db[first..last],
+        columns,
+    );
+    let points = on_screen
+        .distances_km
+        .iter()
+        .zip(&on_screen.levels_db)
+        .map(|(&km, &db)| mapping.to_screen(km, db))
         .collect();
     painter
         .with_clip_rect(plot)
         .line(points, Stroke::new(TRACE_WIDTH, theme::ACCENT));
+    if settings.ideal_visible {
+        ideal::draw(&painter, &mapping, ideal);
+    }
+    if settings.events_visible {
+        events::draw(&painter, &mapping, events, trace);
+    }
     painter.rect_stroke(plot, 0.0, Stroke::new(1.0, theme::BORDER_STRONG), StrokeKind::Inside);
 
     if settings.markers_visible {
@@ -87,6 +107,11 @@ impl Mapping {
         self.plot.left() + share as f32 * self.plot.width()
     }
 
+    fn db(&self, y: f32) -> f64 {
+        let share = f64::from((y - self.plot.top()) / self.plot.height());
+        self.levels.min() + share * self.levels.span()
+    }
+
     fn y(&self, db: f64) -> f32 {
         let share = (db - self.levels.min()) / self.levels.span();
         self.plot.top() + share as f32 * self.plot.height()
@@ -103,9 +128,12 @@ fn handle_input(ui: &Ui, response: &Response, plot: Rect, chart: &mut ChartView)
 
     if let Some(pointer) = response.hover_pos().filter(|p| plot.contains(*p)) {
         let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta.y, i.zoom_delta()));
-        let factor = f64::from(pinch) * (f64::from(scroll) * WHEEL_ZOOM_SPEED).exp();
+        let factor = (f64::from(scroll) * WHEEL_ZOOM_SPEED).exp();
         if factor != 1.0 {
             chart.zoom_at(factor, mapping.km(pointer.x));
+        }
+        if pinch != 1.0 {
+            chart.zoom_levels_at(f64::from(pinch), mapping.db(pointer.y));
         }
     }
 
