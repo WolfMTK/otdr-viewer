@@ -2611,7 +2611,7 @@ dependencies = [
 [[package]]
 name = "sor-rs"
 version = "0.1.0"
-source = "git+https://github.com/WolfMTK/sor-rs#a503ceada48e1704516be766b4ffd40e08fc480c"
+source = "git+https://github.com/WolfMTK/sor-rs#a4dcfd1d9759d609a7f701a4dfdd6e1c0a036cee"
 dependencies = [
  "thiserror 2.0.20",
 ]
