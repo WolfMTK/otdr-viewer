@@ -5,21 +5,35 @@ use sor_rs::SorFile;
 
 use crate::types::{SorData, SorEvent, SorSummary, SorTrace};
 
-pub const TRACE_BUCKETS: usize = 2048;
+const NO_DATA: u16 = u16::MAX;
 
 pub fn load(path: &Path) -> Result<SorData, SorError> {
     let sor = SorFile::from_file(path, false)?;
-    let (distances, levels) = sor
+    let trace = sor
         .data_points
         .as_ref()
-        .map(|dp| (dp.distances_km(), dp.levels_db()))
+        .map(|dp| without_missing(&dp.distances_km(), &dp.levels_db(), &dp.raw_data))
         .unwrap_or_default();
 
-    let fiber_length_km = end_of_fiber_km(&sor).or(distances.last().copied());
+    let fiber_length_km = end_of_fiber_km(&sor).or(trace.distances_km.last().copied());
     Ok(SorData {
         summary: summarize(&sor, fiber_length_km),
-        trace: downsample_min_max(&distances, &levels, TRACE_BUCKETS),
+        trace,
     })
+}
+
+fn without_missing(distances: &[f64], levels: &[f64], raw: &[u16]) -> SorTrace {
+    let (distances_km, levels_db) = distances
+        .iter()
+        .zip(levels)
+        .zip(raw)
+        .filter(|(_, raw)| **raw != NO_DATA)
+        .map(|((&d, &l), _)| (d, l))
+        .unzip();
+    SorTrace {
+        distances_km,
+        levels_db,
+    }
 }
 
 pub fn read_fiber_length_km(path: &Path) -> Option<f64> {
@@ -78,7 +92,7 @@ fn summarize(sor: &SorFile, fiber_length_km: Option<f64>) -> SorSummary {
     }
 }
 
-fn downsample_min_max(distances: &[f64], levels: &[f64], buckets: usize) -> SorTrace {
+pub fn downsample_min_max(distances: &[f64], levels: &[f64], buckets: usize) -> SorTrace {
     let num = distances.len().min(levels.len());
     if num <= buckets * 2 {
         return SorTrace {
@@ -115,9 +129,10 @@ fn downsample_min_max(distances: &[f64], levels: &[f64], buckets: usize) -> SorT
 mod tests {
     use rstest::rstest;
 
-    use crate::sor::{TRACE_BUCKETS, downsample_min_max};
+    use crate::sor::{NO_DATA, downsample_min_max, without_missing};
 
     const LONG: usize = 30_000;
+    const BUCKETS: usize = 2048;
 
     fn ramp(num: usize) -> (Vec<f64>, Vec<f64>) {
         let distance = (0..num).map(|i| i as f64 * 0.001).collect();
@@ -130,7 +145,7 @@ mod tests {
     #[case::short(100)]
     fn downsample_passes_short_traces_through(#[case] num: usize) {
         let (distance, level) = ramp(num);
-        let trace = downsample_min_max(&distance, &level, TRACE_BUCKETS);
+        let trace = downsample_min_max(&distance, &level, BUCKETS);
         assert_eq!(trace.distances_km, distance);
         assert_eq!(trace.levels_db, level);
     }
@@ -138,8 +153,8 @@ mod tests {
     #[test]
     fn downsample_caps_point_count() {
         let (distance, level) = ramp(LONG);
-        let trace = downsample_min_max(&distance, &level, TRACE_BUCKETS);
-        assert!(trace.distances_km.len() <= 2 * TRACE_BUCKETS);
+        let trace = downsample_min_max(&distance, &level, BUCKETS);
+        assert!(trace.distances_km.len() <= 2 * BUCKETS);
         assert_eq!(trace.distances_km.len(), trace.levels_db.len());
     }
 
@@ -149,7 +164,7 @@ mod tests {
     fn downsample_preserves_narrow_extremes(#[case] value: f64) {
         let (distance, mut level) = ramp(LONG);
         level[12_345] = value;
-        let trace = downsample_min_max(&distance, &level, TRACE_BUCKETS);
+        let trace = downsample_min_max(&distance, &level, BUCKETS);
         assert!(trace.levels_db.contains(&value));
     }
 
@@ -159,7 +174,16 @@ mod tests {
         for (i, l) in level.iter_mut().enumerate() {
             *l = if i % 7 == 0 { 10.0 } else { -(i as f64) };
         }
-        let trace = downsample_min_max(&distance, &level, TRACE_BUCKETS);
+        let trace = downsample_min_max(&distance, &level, BUCKETS);
         assert!(trace.distances_km.is_sorted());
+    }
+
+    #[test]
+    fn missing_samples_are_dropped() {
+        let distances = [0.0, 1.0, 2.0];
+        let levels = [10.0, 65.535, 12.0];
+        let trace = without_missing(&distances, &levels, &[10_000, NO_DATA, 12_000]);
+        assert_eq!(trace.distances_km, [0.0, 2.0]);
+        assert_eq!(trace.levels_db, [10.0, 12.0]);
     }
 }
