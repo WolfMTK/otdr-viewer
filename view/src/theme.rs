@@ -24,6 +24,9 @@ pub const WIDGET_ACTIVE: Color32 = Color32::from_rgb(0xea, 0xea, 0xe8);
 pub const ERROR: Color32 = Color32::from_rgb(0xc6, 0x28, 0x28);
 pub const ERROR_SOFT: Color32 = Color32::from_rgb(0xfd, 0xec, 0xec);
 
+pub const EVENT_SPLICE: Color32 = Color32::from_rgb(0xe0, 0x8a, 0x00);
+pub const IDEAL_LINE: Color32 = Color32::from_rgb(0xd9, 0x2d, 0x6f);
+
 pub fn apply(ctx: &egui::Context) {
     ctx.set_theme(egui::ThemePreference::Light);
     ctx.all_styles_mut(|style| {
