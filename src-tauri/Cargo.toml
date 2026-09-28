@@ -29,4 +29,4 @@ tauri-plugin-log = "2"
 log = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.26.1"
+rstest = "0.27.0"
