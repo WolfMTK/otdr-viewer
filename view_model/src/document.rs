@@ -3,10 +3,11 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::thread;
 
 use model::fs::is_sor_file;
-use model::types::{SorData, SorTrace};
+use model::types::{SorData, SorEvent, SorTrace};
 
 use crate::chart_view::{ChartView, DistanceRange, LevelRange};
 use crate::events::{EventRow, event_rows};
+use crate::ideal::{Segment, ideal_trace, pulse_length_km};
 use crate::markers::{Markers, ab_endpoints};
 use crate::params::{Params, params};
 use crate::recent_files::file_name;
@@ -27,10 +28,13 @@ pub struct OpenedFile {
     markers: Markers,
     events: Vec<EventRow>,
     params: Params,
+    ideal: Vec<Segment>,
 }
 
 pub struct ChartParts<'a> {
     pub trace: &'a SorTrace,
+    pub events: &'a [SorEvent],
+    pub ideal: &'a [Segment],
     pub view: &'a mut ChartView,
     pub markers: &'a mut Markers,
 }
@@ -42,6 +46,13 @@ impl OpenedFile {
         let markers = ab_endpoints(&data.summary.events, trace);
         let events = event_rows(&data.summary.events, trace);
         let params = params(&data.summary);
+        let pulse_km = data
+            .summary
+            .pulse_widths_ns
+            .first()
+            .copied()
+            .map_or(0.0, pulse_length_km);
+        let ideal = ideal_trace(trace, &data.summary.events, pulse_km);
         Self {
             path,
             data,
@@ -49,6 +60,7 @@ impl OpenedFile {
             markers,
             events,
             params,
+            ideal,
         }
     }
 
@@ -75,6 +87,8 @@ impl OpenedFile {
     pub fn chart_parts_mut(&mut self) -> ChartParts<'_> {
         ChartParts {
             trace: &self.data.trace,
+            events: &self.data.summary.events,
+            ideal: &self.ideal,
             view: &mut self.chart,
             markers: &mut self.markers,
         }

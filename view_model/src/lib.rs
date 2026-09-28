@@ -10,6 +10,7 @@ pub mod document;
 pub mod drop;
 pub mod events;
 pub mod format;
+pub mod ideal;
 pub mod markers;
 pub mod params;
 pub mod recent_files;

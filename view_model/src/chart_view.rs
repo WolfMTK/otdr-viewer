@@ -1,5 +1,6 @@
 const MIN_SPAN_FRACTION: f64 = 1.0 / 10_000.0;
-const PAN_OVERSHOOT: f64 = 0.5;
+const MAX_SPAN_FACTOR: f64 = 20.0;
+const MIN_OVERLAP: f64 = 0.5;
 const BUTTON_ZOOM_STEP: f64 = 1.4;
 const FIT_TOLERANCE: f64 = 1e-9;
 const LEVEL_PADDING: f64 = 0.06;
@@ -37,31 +38,24 @@ impl DistanceRange {
 
     pub fn clamp_to(self, full: Self) -> Self {
         let full_span = full.span().max(f64::EPSILON);
-        let span = self.span().clamp(full_span * MIN_SPAN_FRACTION, full_span);
-        let middle = self.middle();
-        let (start, end) = (middle - span / 2.0, middle + span / 2.0);
-
-        let overshoot = span * PAN_OVERSHOOT;
-        let lowest_start = full.start - overshoot;
-        let highest_end = full.end + overshoot;
-        let shift = (lowest_start - start).max(0.0) - (end - highest_end).max(0.0);
+        let span = self
+            .span()
+            .clamp(full_span * MIN_SPAN_FRACTION, full_span * MAX_SPAN_FACTOR);
+        let overlap = MIN_OVERLAP * span.min(full_span);
+        let lowest_start = full.start + overlap - span;
+        let highest_start = full.end - overlap;
+        let start = (self.middle() - span / 2.0).clamp(lowest_start, highest_start);
         Self {
-            start: start + shift,
-            end: end + shift,
+            start,
+            end: start + span,
         }
     }
 
     pub fn zoom(self, full: Self, factor: f64, anchor: f64) -> Self {
         let factor = if factor > 0.0 { factor } else { 1.0 };
         let anchor = anchor.clamp(self.start, self.end);
-        let zoomed = Self::new(
-            anchor - (anchor - self.start) / factor,
-            anchor + (self.end - anchor) / factor,
-        );
-        if zoomed.span() >= full.span() {
-            return full;
-        }
-        zoomed.clamp_to(full)
+        Self::new(anchor - (anchor - self.start) / factor, anchor + (self.end - anchor) / factor)
+            .clamp_to(full)
     }
 
     pub fn pan(self, full: Self, delta_km: f64) -> Self {
@@ -106,6 +100,10 @@ impl LevelRange {
         self.max - self.min
     }
 
+    fn middle(self) -> f64 {
+        (self.min + self.max) / 2.0
+    }
+
     fn shifted(self, delta_db: f64) -> Self {
         Self {
             min: self.min + delta_db,
@@ -119,7 +117,7 @@ pub struct ChartView {
     full: DistanceRange,
     visible: Option<DistanceRange>,
     levels: LevelRange,
-    level_shift_db: f64,
+    visible_levels: Option<LevelRange>,
 }
 
 impl ChartView {
@@ -128,7 +126,7 @@ impl ChartView {
             full,
             visible: None,
             levels,
-            level_shift_db: 0.0,
+            visible_levels: None,
         }
     }
 
@@ -141,16 +139,16 @@ impl ChartView {
     }
 
     pub fn levels(&self) -> LevelRange {
-        self.levels.shifted(self.level_shift_db)
+        self.visible_levels.unwrap_or(self.levels)
     }
 
     pub fn is_fitted(&self) -> bool {
-        self.visible.is_none() && self.level_shift_db == 0.0
+        self.visible.is_none() && self.visible_levels.is_none()
     }
 
     pub fn fit(&mut self) {
         self.visible = None;
-        self.level_shift_db = 0.0;
+        self.visible_levels = None;
     }
 
     pub fn zoom_at(&mut self, factor: f64, anchor_km: f64) {
@@ -165,17 +163,50 @@ impl ChartView {
         self.zoom_at(1.0 / BUTTON_ZOOM_STEP, self.visible().middle());
     }
 
+    pub fn zoom_levels_at(&mut self, factor: f64, anchor_db: f64) {
+        let current = self.levels();
+        let factor = if factor > 0.0 { factor } else { 1.0 };
+        let anchor = anchor_db.clamp(current.min, current.max);
+        let min_span = self.levels.span() * MIN_SPAN_FRACTION;
+        let span = (current.span() / factor).max(min_span);
+        let share = (anchor - current.min) / current.span();
+        let min = anchor - share * span;
+        self.set_levels(LevelRange {
+            min,
+            max: min + span,
+        });
+    }
+
     pub fn pan(&mut self, delta_km: f64, delta_db: f64) {
         self.set_visible(self.visible().pan(self.full, delta_km));
-        let limit = self.levels.span();
-        self.level_shift_db = (self.level_shift_db + delta_db).clamp(-limit, limit);
+        if delta_db != 0.0 {
+            self.set_levels(self.levels().shifted(delta_db));
+        }
     }
 
     fn set_visible(&mut self, range: DistanceRange) {
         let tolerance = self.full.span() * FIT_TOLERANCE;
-        let covers_full = range.start() <= self.full.start() + tolerance
-            && range.end() >= self.full.end() - tolerance;
-        self.visible = (!covers_full).then_some(range);
+        let is_full = (range.start() - self.full.start()).abs() <= tolerance
+            && (range.end() - self.full.end()).abs() <= tolerance;
+        self.visible = (!is_full).then_some(range);
+    }
+
+    fn set_levels(&mut self, range: LevelRange) {
+        let full = self.levels;
+        let full_span = full.span();
+        let span = range
+            .span()
+            .clamp(full_span * MIN_SPAN_FRACTION, full_span * MAX_SPAN_FACTOR);
+        let overlap = MIN_OVERLAP * span.min(full_span);
+        let min =
+            (range.middle() - span / 2.0).clamp(full.min + overlap - span, full.max - overlap);
+        let tolerance = full_span * FIT_TOLERANCE;
+        let is_full =
+            (min - full.min).abs() <= tolerance && (min + span - full.max).abs() <= tolerance;
+        self.visible_levels = (!is_full).then_some(LevelRange {
+            min,
+            max: min + span,
+        });
     }
 }
 
@@ -183,6 +214,8 @@ impl ChartView {
 pub struct ChartSettings {
     pub grid_visible: bool,
     pub markers_visible: bool,
+    pub events_visible: bool,
+    pub ideal_visible: bool,
 }
 
 impl Default for ChartSettings {
@@ -190,6 +223,8 @@ impl Default for ChartSettings {
         Self {
             grid_visible: true,
             markers_visible: true,
+            events_visible: true,
+            ideal_visible: true,
         }
     }
 }
@@ -198,7 +233,9 @@ impl Default for ChartSettings {
 mod tests {
     use rstest::rstest;
 
-    use crate::chart_view::{ChartView, DistanceRange, LevelRange, MIN_SPAN_FRACTION};
+    use crate::chart_view::{
+        ChartView, DistanceRange, LevelRange, MAX_SPAN_FACTOR, MIN_SPAN_FRACTION,
+    };
 
     fn range(start: f64, end: f64) -> DistanceRange {
         DistanceRange::new(start, end)
@@ -223,8 +260,9 @@ mod tests {
     #[rstest]
     #[case::in_keeps_anchor_fixed(range(0.0, 100.0), 2.0, 40.0, range(20.0, 70.0))]
     #[case::out_partial(range(40.0, 60.0), 0.5, 50.0, range(30.0, 70.0))]
-    #[case::out_snaps_to_full(range(25.0, 75.0), 0.5, 50.0, full())]
+    #[case::out_to_full(range(25.0, 75.0), 0.5, 50.0, full())]
     #[case::out_near_edge_may_pass_start(range(0.0, 20.0), 0.5, 5.0, range(-5.0, 35.0))]
+    #[case::out_beyond_full_keeps_anchor(range(0.0, 100.0), 0.5, 25.0, range(-25.0, 175.0))]
     fn zoom(
         #[case] visible: DistanceRange,
         #[case] factor: f64,
@@ -277,11 +315,14 @@ mod tests {
     }
 
     #[test]
-    fn zooming_out_of_shifted_view_returns_whole_trace() {
+    fn zooming_far_out_is_limited_and_keeps_trace_on_screen() {
         let mut chart = chart();
-        chart.zoom_in();
-        chart.pan(30.0, 0.0);
-        chart.zoom_at(0.01, 50.0);
+        chart.zoom_at(1e-6, 0.0);
+        let visible = chart.visible();
+        assert!((visible.span() - full().span() * MAX_SPAN_FACTOR).abs() < 1e-6);
+        assert!(visible.start() <= full().end() && visible.end() >= full().start());
+        assert!(!chart.is_fitted());
+        chart.fit();
         assert!(chart.is_fitted());
     }
 
@@ -337,5 +378,53 @@ mod tests {
     #[test]
     fn flat_trace_still_has_height() {
         assert!(LevelRange::around(&[-7.0, -7.0]).span() > 0.0);
+    }
+
+    #[test]
+    fn level_zoom_keeps_anchor_in_place() {
+        let mut chart = chart();
+        let before = chart.levels();
+        let anchor = before.min() + before.span() * 0.25;
+        chart.zoom_levels_at(2.0, anchor);
+        let after = chart.levels();
+        assert!((after.span() - before.span() / 2.0).abs() < 1e-9);
+        let share_before = (anchor - before.min()) / before.span();
+        let share_after = (anchor - after.min()) / after.span();
+        assert!((share_before - share_after).abs() < 1e-9);
+        assert!(!chart.is_fitted());
+    }
+
+    #[test]
+    fn level_zoom_back_out_returns_full_scale() {
+        let mut chart = chart();
+        let before = chart.levels();
+        chart.zoom_levels_at(2.0, before.middle());
+        chart.zoom_levels_at(0.5, before.middle());
+        assert!(chart.is_fitted());
+    }
+
+    #[test]
+    fn deep_level_zoom_respects_min_span() {
+        let mut chart = chart();
+        let full = chart.levels();
+        chart.zoom_levels_at(1e9, full.middle());
+        assert!(chart.levels().span() >= full.span() * MIN_SPAN_FRACTION - 1e-12);
+    }
+
+    #[test]
+    fn fit_resets_level_zoom() {
+        let mut chart = chart();
+        let before = chart.levels();
+        chart.zoom_levels_at(3.0, before.middle());
+        chart.fit();
+        assert_eq!(chart.levels(), before);
+    }
+
+    #[test]
+    fn level_zoom_can_go_beyond_full_scale() {
+        let mut chart = chart();
+        let before = chart.levels();
+        chart.zoom_levels_at(0.5, before.middle());
+        assert!((chart.levels().span() - before.span() * 2.0).abs() < 1e-9);
     }
 }

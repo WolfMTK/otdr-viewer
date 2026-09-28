@@ -28,6 +28,14 @@ pub fn show(ui: &mut Ui, chart: &mut ChartView, settings: &mut ChartSettings) {
                 if ui.add(grid).on_hover_text("Сетка").clicked() {
                     settings.grid_visible = !settings.grid_visible;
                 }
+                let events = IconButton::new(Icon::Events).active(settings.events_visible);
+                if ui.add(events).on_hover_text("Метки событий").clicked() {
+                    settings.events_visible = !settings.events_visible;
+                }
+                let ideal = IconButton::new(Icon::Steps).active(settings.ideal_visible);
+                if ui.add(ideal).on_hover_text("Линии аппроксимации").clicked() {
+                    settings.ideal_visible = !settings.ideal_visible;
+                }
                 let markers = IconButton::new(Icon::Markers).active(settings.markers_visible);
                 if ui.add(markers).on_hover_text("Маркеры A/B").clicked() {
                     settings.markers_visible = !settings.markers_visible;
@@ -51,7 +59,7 @@ fn zoom_buttons(ui: &mut Ui, chart: &mut ChartView) {
     {
         chart.zoom_in();
     }
-    let zoom_out = IconButton::new(Icon::ZoomOut).enabled(zoomed);
+    let zoom_out = IconButton::new(Icon::ZoomOut);
     if ui.add(zoom_out).on_hover_text("Уменьшить").clicked() {
         chart.zoom_out();
     }
