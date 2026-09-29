@@ -21,6 +21,7 @@ pub enum Icon {
     Close,
     Events,
     Steps,
+    AutoScale,
 }
 
 impl Icon {
@@ -45,6 +46,7 @@ impl Icon {
             Icon::Close => egui::include_image!("../assets/icons/close.svg"),
             Icon::Events => egui::include_image!("../assets/icons/flag.svg"),
             Icon::Steps => egui::include_image!("../assets/icons/steps.svg"),
+            Icon::AutoScale => egui::include_image!("../assets/icons/auto-scale.svg"),
         }
     }
 }
@@ -83,6 +85,7 @@ mod tests {
     const CLOSE: &str = include_str!("../assets/icons/close.svg");
     const FLAG: &str = include_str!("../assets/icons/flag.svg");
     const STEPS: &str = include_str!("../assets/icons/steps.svg");
+    const AUTO_SCALE: &str = include_str!("../assets/icons/auto-scale.svg");
     const LOGO: &str = include_str!("../assets/icons/logo.svg");
 
     #[rstest]
@@ -105,6 +108,7 @@ mod tests {
     #[case::close(CLOSE)]
     #[case::flag(FLAG)]
     #[case::steps(STEPS)]
+    #[case::auto_scale(AUTO_SCALE)]
     #[case::logo(LOGO)]
     fn asset_is_valid_svg(#[case] svg: &str) {
         usvg::Tree::from_str(svg, &usvg::Options::default()).expect("SVG failed to parse");
@@ -130,6 +134,7 @@ mod tests {
     #[case::close(CLOSE)]
     #[case::flag(FLAG)]
     #[case::steps(STEPS)]
+    #[case::auto_scale(AUTO_SCALE)]
     fn tintable_icon_is_white(#[case] svg: &str) {
         let lower = svg.to_lowercase();
         assert!(

@@ -8,6 +8,7 @@ use eframe::egui::{
     pos2, vec2,
 };
 use model::sor::downsample_min_max;
+use view_model::autoscale::levels_for_window;
 use view_model::chart_view::{ChartSettings, ChartView, DistanceRange, LevelRange};
 use view_model::document::ChartParts;
 
@@ -22,6 +23,8 @@ const LABEL_GAP: f32 = 6.0;
 const LABEL_FONT_SIZE: f32 = 11.0;
 const TRACE_WIDTH: f32 = 1.5;
 const WHEEL_ZOOM_SPEED: f64 = 0.002;
+const SAMPLE_DOT_SPACING: usize = 4;
+const SAMPLE_DOT_RADIUS: f32 = 1.8;
 
 pub fn show(ui: &mut Ui, parts: ChartParts<'_>, settings: &ChartSettings) {
     let ChartParts {
@@ -43,7 +46,14 @@ pub fn show(ui: &mut Ui, parts: ChartParts<'_>, settings: &ChartSettings) {
     if settings.markers_visible {
         markers::handle_drag(ui, &Mapping::new(plot, view), markers, view.full());
     }
-    handle_input(ui, &response, plot, view);
+    handle_input(ui, &response, plot, view, settings.auto_levels);
+    if settings.auto_levels {
+        let levels = view
+            .is_zoomed_horizontally()
+            .then(|| levels_for_window(trace, view.visible()))
+            .flatten();
+        view.set_auto_levels(levels);
+    }
 
     let mapping = Mapping::new(plot, view);
     let Some((first, last)) = visible_range(&trace.distances_km, mapping.distance) else {
@@ -59,15 +69,19 @@ pub fn show(ui: &mut Ui, parts: ChartParts<'_>, settings: &ChartSettings) {
         &trace.levels_db[first..last],
         columns,
     );
-    let points = on_screen
+    let points: Vec<Pos2> = on_screen
         .distances_km
         .iter()
         .zip(&on_screen.levels_db)
         .map(|(&km, &db)| mapping.to_screen(km, db))
         .collect();
-    painter
-        .with_clip_rect(plot)
-        .line(points, Stroke::new(TRACE_WIDTH, theme::ACCENT));
+    let clipped = painter.with_clip_rect(plot);
+    if points.len() * SAMPLE_DOT_SPACING <= columns {
+        for &point in &points {
+            clipped.circle_filled(point, SAMPLE_DOT_RADIUS, theme::ACCENT);
+        }
+    }
+    clipped.line(points, Stroke::new(TRACE_WIDTH, theme::ACCENT));
     if settings.ideal_visible {
         ideal::draw(&painter, &mapping, ideal);
     }
@@ -122,7 +136,13 @@ impl Mapping {
     }
 }
 
-fn handle_input(ui: &Ui, response: &Response, plot: Rect, chart: &mut ChartView) {
+fn handle_input(
+    ui: &Ui,
+    response: &Response,
+    plot: Rect,
+    chart: &mut ChartView,
+    auto_levels: bool,
+) {
     let mapping = Mapping::new(plot, chart);
     let (distance, levels) = (mapping.distance, mapping.levels);
 
@@ -132,7 +152,7 @@ fn handle_input(ui: &Ui, response: &Response, plot: Rect, chart: &mut ChartView)
         if factor != 1.0 {
             chart.zoom_at(factor, mapping.km(pointer.x));
         }
-        if pinch != 1.0 {
+        if pinch != 1.0 && !auto_levels {
             chart.zoom_levels_at(f64::from(pinch), mapping.db(pointer.y));
         }
     }
@@ -142,7 +162,11 @@ fn handle_input(ui: &Ui, response: &Response, plot: Rect, chart: &mut ChartView)
         let drag = response.drag_delta();
         if drag != Vec2::ZERO {
             let delta_km = -f64::from(drag.x) * distance.span() / f64::from(plot.width());
-            let delta_db = -f64::from(drag.y) * levels.span() / f64::from(plot.height());
+            let delta_db = if auto_levels {
+                0.0
+            } else {
+                -f64::from(drag.y) * levels.span() / f64::from(plot.height())
+            };
             chart.pan(delta_km, delta_db);
         }
     }

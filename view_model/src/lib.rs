@@ -5,6 +5,7 @@ use crate::document::DocumentViewModel;
 use crate::recent_files::RecentFilesViewModel;
 use crate::title_bar::TitleBarViewModel;
 
+pub mod autoscale;
 pub mod chart_view;
 pub mod document;
 pub mod drop;

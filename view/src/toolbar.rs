@@ -36,6 +36,14 @@ pub fn show(ui: &mut Ui, chart: &mut ChartView, settings: &mut ChartSettings) {
                 if ui.add(ideal).on_hover_text("Линии аппроксимации").clicked() {
                     settings.ideal_visible = !settings.ideal_visible;
                 }
+                let auto = IconButton::new(Icon::AutoScale).active(settings.auto_levels);
+                let hint = "Автомасштаб по вертикали при увеличении";
+                if ui.add(auto).on_hover_text(hint).clicked() {
+                    settings.auto_levels = !settings.auto_levels;
+                    if !settings.auto_levels {
+                        chart.reset_levels();
+                    }
+                }
                 let markers = IconButton::new(Icon::Markers).active(settings.markers_visible);
                 if ui.add(markers).on_hover_text("Маркеры A/B").clicked() {
                     settings.markers_visible = !settings.markers_visible;

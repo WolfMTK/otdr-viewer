@@ -78,10 +78,14 @@ impl LevelRange {
         let (min, max) = levels
             .iter()
             .fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), &l| (min.min(l), max.max(l)));
-        if !(min.is_finite() && max.is_finite()) {
+        Self::spanning(min, max, LEVEL_PADDING, MIN_LEVEL_PADDING_DB)
+    }
+
+    pub fn spanning(min: f64, max: f64, padding_fraction: f64, min_padding_db: f64) -> Self {
+        if !(min.is_finite() && max.is_finite()) || max < min {
             return Self { min: 0.0, max: 1.0 };
         }
-        let padding = ((max - min) * LEVEL_PADDING).max(MIN_LEVEL_PADDING_DB);
+        let padding = ((max - min) * padding_fraction).max(min_padding_db);
         Self {
             min: min - padding,
             max: max + padding,
@@ -140,6 +144,18 @@ impl ChartView {
 
     pub fn levels(&self) -> LevelRange {
         self.visible_levels.unwrap_or(self.levels)
+    }
+
+    pub fn is_zoomed_horizontally(&self) -> bool {
+        self.visible.is_some()
+    }
+
+    pub fn set_auto_levels(&mut self, levels: Option<LevelRange>) {
+        self.visible_levels = levels;
+    }
+
+    pub fn reset_levels(&mut self) {
+        self.visible_levels = None;
     }
 
     pub fn is_fitted(&self) -> bool {
@@ -216,6 +232,7 @@ pub struct ChartSettings {
     pub markers_visible: bool,
     pub events_visible: bool,
     pub ideal_visible: bool,
+    pub auto_levels: bool,
 }
 
 impl Default for ChartSettings {
@@ -225,6 +242,7 @@ impl Default for ChartSettings {
             markers_visible: true,
             events_visible: true,
             ideal_visible: true,
+            auto_levels: true,
         }
     }
 }
@@ -426,5 +444,52 @@ mod tests {
         let before = chart.levels();
         chart.zoom_levels_at(0.5, before.middle());
         assert!((chart.levels().span() - before.span() * 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn spanning_pads_by_fraction_with_a_floor() {
+        let padded = LevelRange::spanning(10.0, 20.0, 0.1, 0.5);
+        assert_eq!((padded.min(), padded.max()), (9.0, 21.0));
+        let flat = LevelRange::spanning(10.0, 10.0, 0.1, 0.5);
+        assert_eq!((flat.min(), flat.max()), (9.5, 10.5));
+    }
+
+    #[test]
+    fn spanning_rejects_garbage() {
+        let fallback = LevelRange::spanning(f64::NAN, 1.0, 0.1, 0.5);
+        assert_eq!((fallback.min(), fallback.max()), (0.0, 1.0));
+    }
+
+    #[test]
+    fn auto_levels_replace_the_level_scale_and_can_be_reset() {
+        let mut chart = chart();
+        let full_levels = chart.levels();
+        assert!(!chart.is_zoomed_horizontally());
+
+        chart.zoom_in();
+        assert!(chart.is_zoomed_horizontally());
+
+        let auto = LevelRange::spanning(10.0, 11.0, 0.1, 0.01);
+        chart.set_auto_levels(Some(auto));
+        assert_eq!(chart.levels(), auto);
+        assert!(!chart.is_fitted());
+
+        chart.set_auto_levels(None);
+        assert_eq!(chart.levels(), full_levels);
+    }
+
+    #[test]
+    fn reset_levels_keeps_the_horizontal_zoom() {
+        let mut chart = chart();
+        let full_levels = chart.levels();
+        chart.zoom_in();
+        let zoomed = chart.visible();
+        chart.set_auto_levels(Some(LevelRange::spanning(10.0, 11.0, 0.1, 0.01)));
+
+        chart.reset_levels();
+
+        assert_eq!(chart.levels(), full_levels);
+        assert_eq!(chart.visible(), zoomed);
+        assert!(chart.is_zoomed_horizontally());
     }
 }
